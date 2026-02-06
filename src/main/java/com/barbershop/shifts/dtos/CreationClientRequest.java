@@ -4,5 +4,8 @@ import lombok.Data;
 
 @Data
 public class CreationClientRequest {
-    private String name;
+
+    private String firstName;
+    private String lastName;
+    private String documentNumber;
 }

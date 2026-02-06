@@ -25,12 +25,10 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public ClientResponse createClient(CreationClientRequest clientRequest) {
-        if(clientRequest.getName() == null || clientRequest.getName() == ""){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
-        }
-
         Client client = new Client();
-        client.setName(clientRequest.getName());
+        client.setFirstName(clientRequest.getFirstName());
+        client.setLastName(clientRequest.getLastName());
+        client.setDocumentNumber(clientRequest.getDocumentNumber());
 
         Client clientSaved = clientRepository.save(client);
 
@@ -39,19 +37,22 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public ClientResponse updateClient(ClientRequest newClient) {
+
         if(newClient.getId() <= 0){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
         }
 
         Client actualClient = getClientByIdRaw(newClient.getId());
 
-        if(actualClient.getName().equals(newClient.getName())){
+        if(areEquals(actualClient, new Client(newClient.getId(), newClient.getFirstName(), newClient.getLastName(), newClient.getDocumentNumber()))){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new information is same at the older");
         }
 
         Client client = new Client();
         client.setId(newClient.getId());
-        client.setName(newClient.getName());
+        client.setFirstName(newClient.getFirstName());
+        client.setLastName(newClient.getLastName());
+        client.setDocumentNumber(newClient.getDocumentNumber());
 
         Client clientSaved = clientRepository.save(client);
 
@@ -110,7 +111,24 @@ public class ClientServiceImpl implements ClientService {
     private ClientResponse convertEntityToDto(Client client){
         ClientResponse clientResponse = new ClientResponse();
         clientResponse.setId(client.getId());
-        clientResponse.setName(client.getName());
+        clientResponse.setFirstName(client.getFirstName());
+        clientResponse.setLastName(client.getLastName());
+        clientResponse.setDocumentNumber(client.getDocumentNumber());
+
         return clientResponse;
+    }
+
+    private boolean areEquals(Client instance1, Client instance2){
+        if(
+                instance1.getId().equals(instance2.getId()) &&
+                        instance1.getFirstName().equals(instance2.getFirstName()) &&
+                        instance1.getLastName().equals(instance2.getLastName()) &&
+                        instance1.getDocumentNumber().equals(instance2.getDocumentNumber())
+        ){
+            return true;
+        }
+        else{
+            return false;
+        }
     }
 }
