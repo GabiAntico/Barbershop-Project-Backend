@@ -7,15 +7,12 @@ import com.barbershop.shifts.entities.Client;
 import com.barbershop.shifts.repositories.ClientRepositoryJpa;
 import com.barbershop.shifts.services.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 public class ClientServiceImpl implements ClientService {
@@ -32,20 +29,20 @@ public class ClientServiceImpl implements ClientService {
 
         Client clientSaved = clientRepository.save(client);
 
-        return convertEntityToDto(clientSaved);
+        return convertEntityIntoDto(clientSaved);
     }
 
     @Override
     public ClientResponse updateClient(ClientRequest newClient) {
 
-        if(newClient.getId() <= 0){
+        if(newClient.getId() == null || newClient.getId() <= 0){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
         }
 
         Client actualClient = getClientByIdRaw(newClient.getId());
 
         if(areEquals(actualClient, new Client(newClient.getId(), newClient.getFirstName(), newClient.getLastName(), newClient.getDocumentNumber()))){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new information is same at the older");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new information is the same as the previous one");
         }
 
         Client client = new Client();
@@ -56,12 +53,12 @@ public class ClientServiceImpl implements ClientService {
 
         Client clientSaved = clientRepository.save(client);
 
-        return convertEntityToDto(clientSaved);
+        return convertEntityIntoDto(clientSaved);
     }
 
     @Override
     public ClientResponse deleteClient(Long id) {
-        if(id <= 0){
+        if(id == null || id <= 0){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
         }
 
@@ -69,12 +66,12 @@ public class ClientServiceImpl implements ClientService {
 
         clientRepository.deleteById(id);
 
-        return convertEntityToDto(client);
+        return convertEntityIntoDto(client);
     }
 
     @Override
     public Client getClientByIdRaw(Long id) {
-        if(id <= 0){
+        if(id == null || id <= 0){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
         }
 
@@ -84,14 +81,9 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public ClientResponse getClientById(Long id){
-        if(id <= 0){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
-        }
+        Client client = getClientByIdRaw(id);
 
-        Client client = clientRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found"));
-
-        return convertEntityToDto(client);
+        return convertEntityIntoDto(client);
     }
 
     @Override
@@ -101,14 +93,14 @@ public class ClientServiceImpl implements ClientService {
         List<ClientResponse> clientsDtos = new ArrayList();
 
         for(Client client : clients){
-            ClientResponse clientResponse = convertEntityToDto(client);
+            ClientResponse clientResponse = convertEntityIntoDto(client);
             clientsDtos.add(clientResponse);
         }
 
         return clientsDtos;
     }
 
-    private ClientResponse convertEntityToDto(Client client){
+    private ClientResponse convertEntityIntoDto(Client client){
         ClientResponse clientResponse = new ClientResponse();
         clientResponse.setId(client.getId());
         clientResponse.setFirstName(client.getFirstName());

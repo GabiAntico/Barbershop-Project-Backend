@@ -4,6 +4,7 @@ import com.barbershop.shifts.dtos.ClientRequest;
 import com.barbershop.shifts.dtos.ClientResponse;
 import com.barbershop.shifts.dtos.CreationClientRequest;
 import com.barbershop.shifts.services.ClientService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +31,7 @@ public class ClientController {
     }
 
     @PostMapping
-    public ResponseEntity<ClientResponse> createClient(@RequestBody CreationClientRequest clientRequest){
+    public ResponseEntity<ClientResponse> createClient(@Valid @RequestBody CreationClientRequest clientRequest){
         ClientResponse clientSaved = clientService.createClient(clientRequest);
 
         URI location = URI.create("/api/clients/" + clientSaved.getId());
@@ -39,7 +40,7 @@ public class ClientController {
     }
 
     @PutMapping
-    public ResponseEntity<ClientResponse> updateClient(@RequestBody ClientRequest clientRequest){
+    public ResponseEntity<ClientResponse> updateClient(@Valid @RequestBody ClientRequest clientRequest){
         return ResponseEntity.ok(clientService.updateClient(clientRequest));
     }
 

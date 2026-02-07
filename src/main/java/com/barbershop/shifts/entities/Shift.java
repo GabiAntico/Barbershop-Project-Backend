@@ -1,11 +1,13 @@
 package com.barbershop.shifts.entities;
 
 import jakarta.persistence.*;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "shifts")
+@Data
 public class Shift {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
