@@ -19,7 +19,5 @@ public class ClientRequest {
     @NotNull
     private String lastName;
 
-    @NotBlank
-    @NotNull
     private String documentNumber;
 }

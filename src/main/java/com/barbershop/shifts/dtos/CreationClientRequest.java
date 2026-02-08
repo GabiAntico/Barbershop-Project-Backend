@@ -15,7 +15,5 @@ public class CreationClientRequest {
     @NotNull
     private String lastName;
 
-    @NotBlank
-    @NotNull
     private String documentNumber;
 }
