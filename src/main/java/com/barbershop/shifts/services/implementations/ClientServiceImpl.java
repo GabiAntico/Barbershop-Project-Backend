@@ -23,9 +23,14 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public ClientResponse createClient(CreationClientRequest clientRequest) {
         Client client = new Client();
+        client.setEmail(clientRequest.getEmail());
         client.setFirstName(clientRequest.getFirstName());
         client.setLastName(clientRequest.getLastName());
         client.setDocumentNumber(clientRequest.getDocumentNumber());
+
+        if(clientRepository.existsByEmail(clientRequest.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
+        }
 
         Client clientSaved = clientRepository.save(client);
 
@@ -41,15 +46,16 @@ public class ClientServiceImpl implements ClientService {
 
         Client actualClient = getClientByIdRaw(newClient.getId());
 
-        if(areEquals(actualClient, new Client(newClient.getId(), newClient.getFirstName(), newClient.getLastName(), newClient.getDocumentNumber()))){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new information is the same as the previous one");
-        }
-
         Client client = new Client();
         client.setId(newClient.getId());
+        client.setEmail(newClient.getEmail());
         client.setFirstName(newClient.getFirstName());
         client.setLastName(newClient.getLastName());
         client.setDocumentNumber(newClient.getDocumentNumber());
+
+        if(areEquals(actualClient, client)){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new information is the same as the previous one");
+        }
 
         Client clientSaved = clientRepository.save(client);
 
@@ -103,6 +109,7 @@ public class ClientServiceImpl implements ClientService {
     private ClientResponse convertEntityIntoDto(Client client){
         ClientResponse clientResponse = new ClientResponse();
         clientResponse.setId(client.getId());
+        clientResponse.setEmail(client.getEmail());
         clientResponse.setFirstName(client.getFirstName());
         clientResponse.setLastName(client.getLastName());
         clientResponse.setDocumentNumber(client.getDocumentNumber());
@@ -113,6 +120,7 @@ public class ClientServiceImpl implements ClientService {
     private boolean areEquals(Client instance1, Client instance2){
         if(
                 instance1.getId().equals(instance2.getId()) &&
+                        instance1.getEmail().equals(instance2.getEmail()) &&
                         instance1.getFirstName().equals(instance2.getFirstName()) &&
                         instance1.getLastName().equals(instance2.getLastName()) &&
                         instance1.getDocumentNumber().equals(instance2.getDocumentNumber())
