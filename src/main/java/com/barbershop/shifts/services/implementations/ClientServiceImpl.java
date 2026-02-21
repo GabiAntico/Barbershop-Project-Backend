@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ClientServiceImpl implements ClientService {
@@ -118,17 +119,10 @@ public class ClientServiceImpl implements ClientService {
     }
 
     private boolean areEquals(Client instance1, Client instance2){
-        if(
-                instance1.getId().equals(instance2.getId()) &&
-                        instance1.getEmail().equals(instance2.getEmail()) &&
-                        instance1.getFirstName().equals(instance2.getFirstName()) &&
-                        instance1.getLastName().equals(instance2.getLastName()) &&
-                        instance1.getDocumentNumber().equals(instance2.getDocumentNumber())
-        ){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return Objects.equals(instance1.getId(), instance2.getId()) &&
+                Objects.equals(instance1.getEmail(), instance2.getEmail()) &&
+                Objects.equals(instance1.getFirstName(), instance2.getFirstName()) &&
+                Objects.equals(instance1.getLastName(), instance2.getLastName()) &&
+                Objects.equals(instance1.getDocumentNumber(), instance2.getDocumentNumber());
     }
 }

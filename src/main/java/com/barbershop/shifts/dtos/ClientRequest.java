@@ -8,7 +8,6 @@ import lombok.Data;
 @Data
 public class ClientRequest {
 
-    @NotBlank
     @NotNull
     private Long id;
 
