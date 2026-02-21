@@ -1,6 +1,8 @@
 package com.barbershop.shifts.services.implementations;
 
+import com.barbershop.shifts.dtos.ClientResponse;
 import com.barbershop.shifts.dtos.CreationShiftRequest;
+import com.barbershop.shifts.dtos.ShiftCompleteResponse;
 import com.barbershop.shifts.dtos.ShiftResponse;
 import com.barbershop.shifts.entities.Client;
 import com.barbershop.shifts.entities.Shift;
@@ -36,6 +38,30 @@ public class ShiftServiceImpl implements ShiftService {
         }
 
         return shiftsDtos;
+    }
+
+    @Override
+    public List<ShiftCompleteResponse> getAllCompleteShifts(){
+
+        List<Shift> shifts = shiftRepository.findAll();
+
+        List<ShiftCompleteResponse> shiftsConverted = new ArrayList();
+        for(Shift shift : shifts){
+            ClientResponse clientResponse = new ClientResponse();
+            clientResponse.setId(shift.getClient().getId());
+            clientResponse.setFirstName(shift.getClient().getFirstName());
+            clientResponse.setLastName(shift.getClient().getLastName());
+            clientResponse.setDocumentNumber(shift.getClient().getDocumentNumber());
+            clientResponse.setEmail(shift.getClient().getEmail());
+
+            ShiftCompleteResponse shiftCompleteResponse = new ShiftCompleteResponse();
+            shiftCompleteResponse.setId(shift.getId());
+            shiftCompleteResponse.setDatetime(shift.getDatetime());
+            shiftCompleteResponse.setClient(clientResponse);
+            shiftsConverted.add(shiftCompleteResponse);
+        }
+
+        return shiftsConverted;
     }
 
     @Override

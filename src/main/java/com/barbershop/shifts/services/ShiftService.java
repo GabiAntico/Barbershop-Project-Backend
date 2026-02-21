@@ -1,6 +1,7 @@
 package com.barbershop.shifts.services;
 
 import com.barbershop.shifts.dtos.CreationShiftRequest;
+import com.barbershop.shifts.dtos.ShiftCompleteResponse;
 import com.barbershop.shifts.dtos.ShiftResponse;
 import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
@@ -12,6 +13,7 @@ import java.util.List;
 public interface ShiftService {
 
     List<ShiftResponse> getAllShifts();
+    List<ShiftCompleteResponse> getAllCompleteShifts();
     ShiftResponse getShiftById(Long id);
     Shift getShiftByIdRaw(Long id);
     ShiftResponse createShift(CreationShiftRequest shiftRequest);

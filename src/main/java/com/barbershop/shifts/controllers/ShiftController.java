@@ -1,6 +1,7 @@
 package com.barbershop.shifts.controllers;
 
 import com.barbershop.shifts.dtos.CreationShiftRequest;
+import com.barbershop.shifts.dtos.ShiftCompleteResponse;
 import com.barbershop.shifts.dtos.ShiftResponse;
 import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
 import com.barbershop.shifts.services.ShiftService;
@@ -21,6 +22,11 @@ public class ShiftController {
     @GetMapping
     public ResponseEntity<List<ShiftResponse>> findAllShifts(){
         return ResponseEntity.ok(shiftService.getAllShifts());
+    }
+
+    @GetMapping("/complete")
+    public ResponseEntity<List<ShiftCompleteResponse>> findAllCompleteShifts(){
+        return ResponseEntity.ok(shiftService.getAllCompleteShifts());
     }
 
     @GetMapping("/{id}")
