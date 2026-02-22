@@ -5,6 +5,7 @@ import com.barbershop.shifts.dtos.ShiftCompleteResponse;
 import com.barbershop.shifts.dtos.ShiftResponse;
 import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
 import com.barbershop.shifts.services.ShiftService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +36,7 @@ public class ShiftController {
     }
 
     @PostMapping
-    public ResponseEntity<ShiftResponse> createShift(@RequestBody CreationShiftRequest shiftRequest){
+    public ResponseEntity<ShiftResponse> createShift(@Valid @RequestBody CreationShiftRequest shiftRequest){
 
         ShiftResponse shiftSaved = shiftService.createShift(shiftRequest);
 
@@ -45,7 +46,7 @@ public class ShiftController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ShiftResponse> updateShift(@PathVariable Long id, @RequestBody CreationShiftRequest shiftRequest){
-        return null;
+    public ResponseEntity<ShiftResponse> updateShift(@PathVariable Long id, @Valid @RequestBody CreationShiftRequest shiftRequest){
+        return ResponseEntity.ok(shiftService.updateShift(id, shiftRequest));
     }
 }

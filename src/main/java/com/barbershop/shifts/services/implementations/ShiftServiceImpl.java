@@ -86,14 +86,17 @@ public class ShiftServiceImpl implements ShiftService {
     public ShiftResponse createShift(CreationShiftRequest shiftRequest) {
 
         LocalDateTime dt = shiftRequest.getDatetime().withSecond(0).withNano(0);
-
-        Optional<Shift> shiftAtSameDate = shiftRepository.findByDatetime(dt);
-
-        if(shiftAtSameDate.isPresent()){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "There is already a shift on the same date and time");
-        }
+        LocalDateTime start = dt.minusMinutes(30);
+        LocalDateTime end = dt.plusMinutes(30);
 
         Client client = clientService.getClientByIdRaw(shiftRequest.getClientId());
+
+        if (shiftRepository.existsByDatetimeAfterAndDatetimeBefore(start, end)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "There is already a shift within 30 minutes of this time"
+            );
+        }
 
         Shift shift = new Shift();
         shift.setDatetime(dt);
@@ -106,7 +109,37 @@ public class ShiftServiceImpl implements ShiftService {
 
     @Override
     public ShiftResponse updateShift(Long id, CreationShiftRequest shiftRequest){
-        return null;
+
+        if(id == null || id <= 0){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
+        }
+
+        Shift actualShift = getShiftByIdRaw(id);
+        Client newClient = clientService.getClientByIdRaw(shiftRequest.getClientId());
+
+        LocalDateTime dt = shiftRequest.getDatetime().withSecond(0).withNano(0);
+        LocalDateTime start = dt.minusMinutes(30);
+        LocalDateTime end = dt.plusMinutes(30);
+
+        if (shiftRepository.existsByDatetimeAfterAndDatetimeBeforeAndIdNot(start, end, id)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "There is already a shift within 30 minutes of this time"
+            );
+        }
+
+        if (Objects.equals(actualShift.getDatetime(), dt) &&
+                Objects.equals(actualShift.getClient().getId(), shiftRequest.getClientId())
+        ) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new information is the same as the previous one");
+        }
+
+        actualShift.setDatetime(dt);
+        actualShift.setClient(newClient);
+
+        Shift shiftSaved = shiftRepository.save(actualShift);
+
+        return convertEntityIntoDto(shiftSaved);
     }
 
     private ShiftResponse convertEntityIntoDto(Shift shift){
@@ -116,11 +149,5 @@ public class ShiftServiceImpl implements ShiftService {
         shiftResponse.setClientId(shift.getClient().getId());
 
         return shiftResponse;
-    }
-
-    private boolean areEquals(Shift instance1, Shift instance2){
-        return Objects.equals(instance1.getDatetime(), instance2.getDatetime()) &&
-                Objects.equals(instance1.getClient(), instance2.getClient()) &&
-                Objects.equals(instance1.getId(), instance2.getId());
     }
 }
