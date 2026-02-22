@@ -7,6 +7,6 @@ import java.time.LocalDateTime;
 @Data
 public class ShiftResponse {
     private Long id;
-    private LocalDateTime dateTime;
+    private LocalDateTime datetime;
     private Long clientId;
 }

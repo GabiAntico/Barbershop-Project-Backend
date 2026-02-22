@@ -43,4 +43,9 @@ public class ShiftController {
 
         return ResponseEntity.created(location).body(shiftSaved);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ShiftResponse> updateShift(@PathVariable Long id, @RequestBody CreationShiftRequest shiftRequest){
+        return null;
+    }
 }

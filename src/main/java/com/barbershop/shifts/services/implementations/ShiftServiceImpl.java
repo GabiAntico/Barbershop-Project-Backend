@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -103,12 +104,23 @@ public class ShiftServiceImpl implements ShiftService {
         return convertEntityIntoDto(shiftSaved);
     }
 
+    @Override
+    public ShiftResponse updateShift(Long id, CreationShiftRequest shiftRequest){
+        return null;
+    }
+
     private ShiftResponse convertEntityIntoDto(Shift shift){
         ShiftResponse shiftResponse = new ShiftResponse();
         shiftResponse.setId(shift.getId());
-        shiftResponse.setDateTime(shift.getDatetime());
+        shiftResponse.setDatetime(shift.getDatetime());
         shiftResponse.setClientId(shift.getClient().getId());
 
         return shiftResponse;
+    }
+
+    private boolean areEquals(Shift instance1, Shift instance2){
+        return Objects.equals(instance1.getDatetime(), instance2.getDatetime()) &&
+                Objects.equals(instance1.getClient(), instance2.getClient()) &&
+                Objects.equals(instance1.getId(), instance2.getId());
     }
 }

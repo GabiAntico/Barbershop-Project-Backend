@@ -17,4 +17,5 @@ public interface ShiftService {
     ShiftResponse getShiftById(Long id);
     Shift getShiftByIdRaw(Long id);
     ShiftResponse createShift(CreationShiftRequest shiftRequest);
+    ShiftResponse updateShift(Long id, CreationShiftRequest shiftRequest);
 }
