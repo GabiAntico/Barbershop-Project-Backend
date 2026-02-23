@@ -6,6 +6,7 @@ import com.barbershop.shifts.dtos.ShiftCompleteResponse;
 import com.barbershop.shifts.dtos.ShiftResponse;
 import com.barbershop.shifts.entities.Client;
 import com.barbershop.shifts.entities.Shift;
+import com.barbershop.shifts.entities.ShiftStatus;
 import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
 import com.barbershop.shifts.services.ClientService;
 import com.barbershop.shifts.services.ShiftService;
@@ -59,6 +60,7 @@ public class ShiftServiceImpl implements ShiftService {
             shiftCompleteResponse.setId(shift.getId());
             shiftCompleteResponse.setDatetime(shift.getDatetime());
             shiftCompleteResponse.setClient(clientResponse);
+            shiftCompleteResponse.setStatus(shift.getStatus());
             shiftsConverted.add(shiftCompleteResponse);
         }
 
@@ -91,7 +93,9 @@ public class ShiftServiceImpl implements ShiftService {
 
         Client client = clientService.getClientByIdRaw(shiftRequest.getClientId());
 
-        if (shiftRepository.existsByDatetimeAfterAndDatetimeBefore(start, end)) {
+        List<ShiftStatus> blocking = List.of(ShiftStatus.PENDING, ShiftStatus.COMPLETED);
+
+        if (shiftRepository.existsByDatetimeAfterAndDatetimeBeforeAndStatusIn(start, end, blocking)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "There is already a shift within 30 minutes of this time"
@@ -101,6 +105,7 @@ public class ShiftServiceImpl implements ShiftService {
         Shift shift = new Shift();
         shift.setDatetime(dt);
         shift.setClient(client);
+        shift.setStatus(shiftRequest.getStatus());
 
         Shift shiftSaved = shiftRepository.save(shift);
 
@@ -121,7 +126,9 @@ public class ShiftServiceImpl implements ShiftService {
         LocalDateTime start = dt.minusMinutes(30);
         LocalDateTime end = dt.plusMinutes(30);
 
-        if (shiftRepository.existsByDatetimeAfterAndDatetimeBeforeAndIdNot(start, end, id)) {
+        List<ShiftStatus> blocking = List.of(ShiftStatus.PENDING, ShiftStatus.COMPLETED);
+
+        if (shiftRepository.existsByDatetimeAfterAndDatetimeBeforeAndIdNotAndStatusIn(start, end, id, blocking)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "There is already a shift within 30 minutes of this time"
@@ -129,13 +136,15 @@ public class ShiftServiceImpl implements ShiftService {
         }
 
         if (Objects.equals(actualShift.getDatetime(), dt) &&
-                Objects.equals(actualShift.getClient().getId(), shiftRequest.getClientId())
+                Objects.equals(actualShift.getClient().getId(), shiftRequest.getClientId()) &&
+                Objects.equals(actualShift.getStatus(), shiftRequest.getStatus())
         ) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new information is the same as the previous one");
         }
 
         actualShift.setDatetime(dt);
         actualShift.setClient(newClient);
+        actualShift.setStatus(shiftRequest.getStatus());
 
         Shift shiftSaved = shiftRepository.save(actualShift);
 
@@ -147,6 +156,7 @@ public class ShiftServiceImpl implements ShiftService {
         shiftResponse.setId(shift.getId());
         shiftResponse.setDatetime(shift.getDatetime());
         shiftResponse.setClientId(shift.getClient().getId());
+        shiftResponse.setStatus(shift.getStatus());
 
         return shiftResponse;
     }

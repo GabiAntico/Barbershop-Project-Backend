@@ -1,5 +1,6 @@
 package com.barbershop.shifts.dtos;
 
+import com.barbershop.shifts.entities.ShiftStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
@@ -11,4 +12,5 @@ public class ShiftCompleteResponse {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     private LocalDateTime datetime;
     private ClientResponse client;
+    private ShiftStatus status;
 }

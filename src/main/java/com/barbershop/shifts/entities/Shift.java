@@ -19,4 +19,8 @@ public class Shift {
     @ManyToOne
     @JoinColumn(name = "client_id")
     private Client client;
+
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    private ShiftStatus status;
 }

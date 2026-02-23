@@ -1,5 +1,6 @@
 package com.barbershop.shifts.dtos;
 
+import com.barbershop.shifts.entities.ShiftStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,4 +16,7 @@ public class CreationShiftRequest {
 
     @NotNull
     private Long clientId;
+
+    @NotNull
+    private ShiftStatus status;
 }
