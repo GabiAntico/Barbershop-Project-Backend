@@ -1,0 +1,42 @@
+package com.barbershop.shifts.entities;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "visits")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Visit {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @OneToOne
+    @JoinColumn(name = "shift_id", nullable = false, unique = true)
+    private Shift shift;
+
+    @Column(name = "total_amount", precision = 10, scale = 2, nullable = false)
+    private BigDecimal totalAmount;
+
+    @Column(name = "currency", length = 3)
+    private String currency;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", nullable = false)
+    private PaymentStatus paymentSatus;
+
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method")
+    private PaymentMethod paymentMethod;
+}
