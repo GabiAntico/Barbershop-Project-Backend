@@ -1,4 +1,4 @@
-package com.barbershop.shifts.dtos;
+package com.barbershop.shifts.dtos.clients;
 
 import lombok.Data;
 

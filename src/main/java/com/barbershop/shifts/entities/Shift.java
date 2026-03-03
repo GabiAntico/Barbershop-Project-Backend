@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,4 +31,7 @@ public class Shift {
 
     @OneToOne(mappedBy = "shift")
     private Visit visit;
+
+    @Column(name="estimated_amount", precision = 10, scale = 2)
+    private BigDecimal estimatedAmount;
 }

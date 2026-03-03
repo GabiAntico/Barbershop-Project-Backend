@@ -1,8 +1,8 @@
 package com.barbershop.shifts.controllers;
 
-import com.barbershop.shifts.dtos.ClientRequest;
-import com.barbershop.shifts.dtos.ClientResponse;
-import com.barbershop.shifts.dtos.CreationClientRequest;
+import com.barbershop.shifts.dtos.clients.ClientRequest;
+import com.barbershop.shifts.dtos.clients.ClientResponse;
+import com.barbershop.shifts.dtos.clients.CreationClientRequest;
 import com.barbershop.shifts.services.ClientService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

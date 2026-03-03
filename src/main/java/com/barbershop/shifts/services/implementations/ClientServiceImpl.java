@@ -1,8 +1,8 @@
 package com.barbershop.shifts.services.implementations;
 
-import com.barbershop.shifts.dtos.ClientRequest;
-import com.barbershop.shifts.dtos.ClientResponse;
-import com.barbershop.shifts.dtos.CreationClientRequest;
+import com.barbershop.shifts.dtos.clients.ClientRequest;
+import com.barbershop.shifts.dtos.clients.ClientResponse;
+import com.barbershop.shifts.dtos.clients.CreationClientRequest;
 import com.barbershop.shifts.entities.Client;
 import com.barbershop.shifts.repositories.ClientRepositoryJpa;
 import com.barbershop.shifts.services.ClientService;

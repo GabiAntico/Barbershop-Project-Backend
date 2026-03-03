@@ -1,9 +1,8 @@
 package com.barbershop.shifts.controllers;
 
-import com.barbershop.shifts.dtos.CreationShiftRequest;
-import com.barbershop.shifts.dtos.ShiftCompleteResponse;
-import com.barbershop.shifts.dtos.ShiftResponse;
-import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
+import com.barbershop.shifts.dtos.shifts.CreationShiftRequest;
+import com.barbershop.shifts.dtos.shifts.ShiftCompleteResponse;
+import com.barbershop.shifts.dtos.shifts.ShiftResponse;
 import com.barbershop.shifts.services.ShiftService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,9 +1,9 @@
 package com.barbershop.shifts.services.implementations;
 
-import com.barbershop.shifts.dtos.ClientResponse;
-import com.barbershop.shifts.dtos.CreationShiftRequest;
-import com.barbershop.shifts.dtos.ShiftCompleteResponse;
-import com.barbershop.shifts.dtos.ShiftResponse;
+import com.barbershop.shifts.dtos.clients.ClientResponse;
+import com.barbershop.shifts.dtos.shifts.CreationShiftRequest;
+import com.barbershop.shifts.dtos.shifts.ShiftCompleteResponse;
+import com.barbershop.shifts.dtos.shifts.ShiftResponse;
 import com.barbershop.shifts.entities.Client;
 import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.entities.ShiftStatus;
@@ -15,11 +15,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 public class ShiftServiceImpl implements ShiftService {
@@ -61,6 +61,7 @@ public class ShiftServiceImpl implements ShiftService {
             shiftCompleteResponse.setDatetime(shift.getDatetime());
             shiftCompleteResponse.setClient(clientResponse);
             shiftCompleteResponse.setStatus(shift.getStatus());
+            shiftCompleteResponse.setEstimatedAmount(shift.getEstimatedAmount());
             shiftsConverted.add(shiftCompleteResponse);
         }
 
@@ -87,6 +88,8 @@ public class ShiftServiceImpl implements ShiftService {
     @Override
     public ShiftResponse createShift(CreationShiftRequest shiftRequest) {
 
+        validateAmount(shiftRequest.getEstimatedAmount());
+
         LocalDateTime dt = shiftRequest.getDatetime().withSecond(0).withNano(0);
         LocalDateTime start = dt.minusMinutes(30);
         LocalDateTime end = dt.plusMinutes(30);
@@ -105,7 +108,8 @@ public class ShiftServiceImpl implements ShiftService {
         Shift shift = new Shift();
         shift.setDatetime(dt);
         shift.setClient(client);
-        shift.setStatus(shiftRequest.getStatus());
+        shift.setStatus(ShiftStatus.PENDING);
+        shift.setEstimatedAmount(shiftRequest.getEstimatedAmount());
 
         Shift shiftSaved = shiftRepository.save(shift);
 
@@ -114,6 +118,8 @@ public class ShiftServiceImpl implements ShiftService {
 
     @Override
     public ShiftResponse updateShift(Long id, CreationShiftRequest shiftRequest){
+
+        validateAmount(shiftRequest.getEstimatedAmount());
 
         if(id == null || id <= 0){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
@@ -145,6 +151,7 @@ public class ShiftServiceImpl implements ShiftService {
         actualShift.setDatetime(dt);
         actualShift.setClient(newClient);
         actualShift.setStatus(shiftRequest.getStatus());
+        actualShift.setEstimatedAmount(shiftRequest.getEstimatedAmount());
 
         Shift shiftSaved = shiftRepository.save(actualShift);
 
@@ -157,7 +164,14 @@ public class ShiftServiceImpl implements ShiftService {
         shiftResponse.setDatetime(shift.getDatetime());
         shiftResponse.setClientId(shift.getClient().getId());
         shiftResponse.setStatus(shift.getStatus());
+        shiftResponse.setEstimatedAmount(shift.getEstimatedAmount());
 
         return shiftResponse;
+    }
+
+    private void validateAmount(BigDecimal amount){
+        if (amount != null && amount.compareTo(BigDecimal.ZERO) < 0){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The amount can't be negative.");
+        }
     }
 }

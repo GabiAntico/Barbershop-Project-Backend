@@ -1,10 +1,9 @@
 package com.barbershop.shifts.services;
 
-import com.barbershop.shifts.dtos.CreationShiftRequest;
-import com.barbershop.shifts.dtos.ShiftCompleteResponse;
-import com.barbershop.shifts.dtos.ShiftResponse;
+import com.barbershop.shifts.dtos.shifts.CreationShiftRequest;
+import com.barbershop.shifts.dtos.shifts.ShiftCompleteResponse;
+import com.barbershop.shifts.dtos.shifts.ShiftResponse;
 import com.barbershop.shifts.entities.Shift;
-import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.barbershop.shifts.dtos;
+package com.barbershop.shifts.dtos.clients;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -6,10 +6,13 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class CreationClientRequest {
+public class ClientRequest {
 
     @NotNull
+    private Long id;
+
     @NotBlank
+    @NotNull
     @Email
     private String email;
 
