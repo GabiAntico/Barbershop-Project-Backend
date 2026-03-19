@@ -31,7 +31,7 @@ public class Visit {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", nullable = false)
-    private PaymentStatus paymentSatus;
+    private PaymentStatus paymentStatus;
 
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
