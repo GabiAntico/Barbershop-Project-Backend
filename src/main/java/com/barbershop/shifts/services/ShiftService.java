@@ -3,6 +3,7 @@ package com.barbershop.shifts.services;
 import com.barbershop.shifts.dtos.shifts.CreationShiftRequest;
 import com.barbershop.shifts.dtos.shifts.ShiftCompleteResponse;
 import com.barbershop.shifts.dtos.shifts.ShiftResponse;
+import com.barbershop.shifts.dtos.shifts.UpdateShiftRequest;
 import com.barbershop.shifts.entities.Shift;
 import org.springframework.stereotype.Service;
 
@@ -16,5 +17,5 @@ public interface ShiftService {
     ShiftResponse getShiftById(Long id);
     Shift getShiftByIdRaw(Long id);
     ShiftResponse createShift(CreationShiftRequest shiftRequest);
-    ShiftResponse updateShift(Long id, CreationShiftRequest shiftRequest);
+    ShiftResponse updateShift(Long id, UpdateShiftRequest shiftRequest);
 }

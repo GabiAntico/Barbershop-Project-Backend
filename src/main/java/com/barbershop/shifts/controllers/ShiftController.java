@@ -3,6 +3,7 @@ package com.barbershop.shifts.controllers;
 import com.barbershop.shifts.dtos.shifts.CreationShiftRequest;
 import com.barbershop.shifts.dtos.shifts.ShiftCompleteResponse;
 import com.barbershop.shifts.dtos.shifts.ShiftResponse;
+import com.barbershop.shifts.dtos.shifts.UpdateShiftRequest;
 import com.barbershop.shifts.services.ShiftService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,7 @@ public class ShiftController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ShiftResponse> updateShift(@PathVariable Long id, @Valid @RequestBody CreationShiftRequest shiftRequest){
+    public ResponseEntity<ShiftResponse> updateShift(@PathVariable Long id, @Valid @RequestBody UpdateShiftRequest shiftRequest){
         return ResponseEntity.ok(shiftService.updateShift(id, shiftRequest));
     }
 }

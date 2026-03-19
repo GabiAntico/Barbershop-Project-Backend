@@ -4,6 +4,7 @@ import com.barbershop.shifts.dtos.clients.ClientResponse;
 import com.barbershop.shifts.dtos.shifts.CreationShiftRequest;
 import com.barbershop.shifts.dtos.shifts.ShiftCompleteResponse;
 import com.barbershop.shifts.dtos.shifts.ShiftResponse;
+import com.barbershop.shifts.dtos.shifts.UpdateShiftRequest;
 import com.barbershop.shifts.entities.Client;
 import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.entities.ShiftStatus;
@@ -117,7 +118,7 @@ public class ShiftServiceImpl implements ShiftService {
     }
 
     @Override
-    public ShiftResponse updateShift(Long id, CreationShiftRequest shiftRequest){
+    public ShiftResponse updateShift(Long id, UpdateShiftRequest shiftRequest){
 
         validateAmount(shiftRequest.getEstimatedAmount());
 
