@@ -1,0 +1,56 @@
+@startuml
+left to right direction
+
+class Client {
+  Long id
+  String email
+  String firstName
+  String lastName
+  String documentNumber
+}
+
+class Shift {
+  Long id
+  LocalDateTime datetime
+  ShiftStatus status
+  BigDecimal estimatedAmount
+}
+
+class Visit {
+  Long id
+  BigDecimal totalAmount
+  String currency
+  PaymentStatus paymentSatus
+  LocalDateTime paidAt
+  PaymentMethod paymentMethod
+}
+
+enum ShiftStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIAL
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+  CARD
+}
+
+Client "1" --> "0..*" Shift : books
+Shift "1" --> "1" Client : client
+Shift "1" --> "0..1" Visit : generates
+Visit "1" --> "1" Shift : shift
+
+Shift --> ShiftStatus
+Visit --> PaymentStatus
+Visit --> PaymentMethod
+
+@enduml

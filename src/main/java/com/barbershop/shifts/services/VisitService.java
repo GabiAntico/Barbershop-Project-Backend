@@ -4,9 +4,13 @@ import com.barbershop.shifts.dtos.visits.CreationVisitRequest;
 import com.barbershop.shifts.dtos.visits.UpdateVisitRequest;
 import com.barbershop.shifts.dtos.visits.VisitResponse;
 import com.barbershop.shifts.entities.Visit;
+import org.springframework.stereotype.Service;
 
+import java.util.List;
+
+@Service
 public interface VisitService {
-    VisitResponse getAllVisits();
+    List<VisitResponse> getAllVisits();
     VisitResponse getVisitById(Long id);
     Visit getRawVisitById(Long id);
     VisitResponse createVisit(CreationVisitRequest visitRequest);

@@ -1,0 +1,21 @@
+@startuml
+left to right direction
+
+class User {
+  Long id
+  String email
+  String passwordHash
+  String fullName
+  Boolean enabled
+  LocalDateTime createdAt
+  LocalDateTime updatedAt
+}
+
+class Role {
+  Long id
+  String name
+}
+
+User "0..*" -- "0..*" Role : has
+
+@enduml
