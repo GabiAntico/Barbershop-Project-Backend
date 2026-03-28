@@ -40,7 +40,7 @@ public class ShiftController {
 
         ShiftResponse shiftSaved = shiftService.createShift(shiftRequest);
 
-        URI location = URI.create("/api/shifts" + shiftSaved.getId());
+        URI location = URI.create("/api/shifts/" + shiftSaved.getId());
 
         return ResponseEntity.created(location).body(shiftSaved);
     }
