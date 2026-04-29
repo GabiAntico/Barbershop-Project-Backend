@@ -62,18 +62,21 @@ public class VisitServiceImpl implements VisitService {
     @Override
     public VisitResponse createVisit(CreationVisitRequest visitRequest) {
 
+
         Shift shift = shiftService.getShiftByIdRaw(visitRequest.getShiftId());
 
         if(shift.getVisit() != null){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This shift already has a visit associated");
         }
 
-        if(shift.getStatus() != ShiftStatus.COMPLETED){
+        if(shift.getStatus() != ShiftStatus.PENDING){
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "A visit can only be created for a completed shift"
             );
         }
+
+        shiftService.completeShift(shift.getId());
 
         validatePaidAmount(visitRequest);
 
@@ -93,6 +96,7 @@ public class VisitServiceImpl implements VisitService {
         return convertEntityIntoDto(visitRepository.save(visitNew));
     }
 
+    //TODO: Finish update visit
     @Override
     public VisitResponse updateVisit(Long id, UpdateVisitRequest visitRequest) {
         return null;

@@ -159,6 +159,17 @@ public class ShiftServiceImpl implements ShiftService {
         return convertEntityIntoDto(shiftSaved);
     }
 
+    @Override
+    public ShiftResponse completeShift(Long shiftId){
+        Shift shift = shiftRepository.findById(shiftId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found"));
+
+        shift.setStatus(ShiftStatus.COMPLETED);
+
+        shiftRepository.save(shift);
+
+        return convertEntityIntoDto(shift);
+    }
+
     private ShiftResponse convertEntityIntoDto(Shift shift){
         ShiftResponse shiftResponse = new ShiftResponse();
         shiftResponse.setId(shift.getId());
