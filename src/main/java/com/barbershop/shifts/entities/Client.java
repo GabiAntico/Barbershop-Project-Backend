@@ -18,6 +18,9 @@ public class Client {
     @Column(name = "email")
     private String email;
 
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
     @Column(name = "first_name")
     private String firstName;
 

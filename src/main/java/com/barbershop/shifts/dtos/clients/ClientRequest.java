@@ -11,10 +11,11 @@ public class ClientRequest {
     @NotNull
     private Long id;
 
-    @NotBlank
-    @NotNull
     @Email
     private String email;
+
+    @NotBlank
+    private String phoneNumber;
 
     private String firstName;
 

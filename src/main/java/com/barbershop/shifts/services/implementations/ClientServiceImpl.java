@@ -24,12 +24,13 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public ClientResponse createClient(CreationClientRequest clientRequest) {
         Client client = new Client();
-        client.setEmail(clientRequest.getEmail());
-        client.setFirstName(clientRequest.getFirstName());
-        client.setLastName(clientRequest.getLastName());
-        client.setDocumentNumber(clientRequest.getDocumentNumber());
+        client.setEmail(normalize(clientRequest.getEmail()));
+        client.setPhoneNumber(normalize(clientRequest.getPhoneNumber()));
+        client.setFirstName(normalize(clientRequest.getFirstName()));
+        client.setLastName(normalize(clientRequest.getLastName()));
+        client.setDocumentNumber(normalize(clientRequest.getDocumentNumber()));
 
-        if(clientRepository.existsByEmail(clientRequest.getEmail())) {
+        if(client.getEmail() != null && clientRepository.existsByEmail(client.getEmail())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
         }
 
@@ -49,10 +50,15 @@ public class ClientServiceImpl implements ClientService {
 
         Client client = new Client();
         client.setId(newClient.getId());
-        client.setEmail(newClient.getEmail());
-        client.setFirstName(newClient.getFirstName());
-        client.setLastName(newClient.getLastName());
-        client.setDocumentNumber(newClient.getDocumentNumber());
+        client.setEmail(normalize(newClient.getEmail()));
+        client.setPhoneNumber(normalize(newClient.getPhoneNumber()));
+        client.setFirstName(normalize(newClient.getFirstName()));
+        client.setLastName(normalize(newClient.getLastName()));
+        client.setDocumentNumber(normalize(newClient.getDocumentNumber()));
+
+        if(client.getEmail() != null && clientRepository.existsByEmailAndIdNot(client.getEmail(), client.getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
+        }
 
         if(areEquals(actualClient, client)){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new information is the same as the previous one");
@@ -111,6 +117,7 @@ public class ClientServiceImpl implements ClientService {
         ClientResponse clientResponse = new ClientResponse();
         clientResponse.setId(client.getId());
         clientResponse.setEmail(client.getEmail());
+        clientResponse.setPhoneNumber(client.getPhoneNumber());
         clientResponse.setFirstName(client.getFirstName());
         clientResponse.setLastName(client.getLastName());
         clientResponse.setDocumentNumber(client.getDocumentNumber());
@@ -121,8 +128,16 @@ public class ClientServiceImpl implements ClientService {
     private boolean areEquals(Client instance1, Client instance2){
         return Objects.equals(instance1.getId(), instance2.getId()) &&
                 Objects.equals(instance1.getEmail(), instance2.getEmail()) &&
+                Objects.equals(instance1.getPhoneNumber(), instance2.getPhoneNumber()) &&
                 Objects.equals(instance1.getFirstName(), instance2.getFirstName()) &&
                 Objects.equals(instance1.getLastName(), instance2.getLastName()) &&
                 Objects.equals(instance1.getDocumentNumber(), instance2.getDocumentNumber());
+    }
+
+    private String normalize(String value) {
+        if (value == null) return null;
+
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
