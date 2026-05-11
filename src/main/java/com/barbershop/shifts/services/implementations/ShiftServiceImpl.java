@@ -12,6 +12,7 @@ import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.entities.ShiftStatus;
 import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
 import com.barbershop.shifts.services.ClientService;
+import com.barbershop.shifts.services.ScheduleSettingsService;
 import com.barbershop.shifts.services.ShiftService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -30,8 +31,6 @@ import java.util.Objects;
 @Service
 public class ShiftServiceImpl implements ShiftService {
 
-    private static final LocalTime DEFAULT_START_TIME = LocalTime.of(10, 0);
-    private static final LocalTime DEFAULT_END_TIME = LocalTime.of(20, 0);
     private static final int DEFAULT_SLOT_MINUTES = 30;
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -40,6 +39,9 @@ public class ShiftServiceImpl implements ShiftService {
 
     @Autowired
     private ClientService clientService;
+
+    @Autowired
+    private ScheduleSettingsService scheduleSettingsService;
 
     @Override
     public List<ShiftResponse> getAllShifts() {
@@ -96,7 +98,7 @@ public class ShiftServiceImpl implements ShiftService {
         LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
 
         List<TimeSlotAvailabilityResponse> availability = new ArrayList<>();
-        for (LocalTime time = DEFAULT_START_TIME; !time.isAfter(DEFAULT_END_TIME); time = time.plusMinutes(DEFAULT_SLOT_MINUTES)) {
+        for (LocalTime time : scheduleSettingsService.getSlotsForDate(date)) {
             LocalDateTime slotDateTime = LocalDateTime.of(date, time);
             boolean isExcludedShiftSlot = excludedShift != null && Objects.equals(excludedShift.getDatetime(), slotDateTime);
             boolean available = (isExcludedShiftSlot || !slotDateTime.isBefore(now)) && !isSlotBlocked(slotDateTime, blockingShifts);
@@ -115,7 +117,7 @@ public class ShiftServiceImpl implements ShiftService {
         LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
 
         List<AgendaSlotResponse> agenda = new ArrayList<>();
-        for (LocalTime time = DEFAULT_START_TIME; !time.isAfter(DEFAULT_END_TIME); time = time.plusMinutes(DEFAULT_SLOT_MINUTES)) {
+        for (LocalTime time : scheduleSettingsService.getSlotsForDate(date)) {
             LocalDateTime slotDateTime = LocalDateTime.of(date, time);
             Shift shift = findShiftForSlot(slotDateTime, blockingShifts);
 
@@ -135,7 +137,7 @@ public class ShiftServiceImpl implements ShiftService {
         validateAmount(shiftRequest.getEstimatedAmount());
 
         LocalDateTime dt = shiftRequest.getDatetime().withSecond(0).withNano(0);
-        validateDefaultSlot(dt);
+        validateScheduleSlot(dt);
         LocalDateTime start = dt.minusMinutes(30);
         LocalDateTime end = dt.plusMinutes(30);
 
@@ -174,7 +176,7 @@ public class ShiftServiceImpl implements ShiftService {
         Client newClient = clientService.getClientByIdRaw(shiftRequest.getClientId());
 
         LocalDateTime dt = shiftRequest.getDatetime().withSecond(0).withNano(0);
-        validateDefaultSlot(dt);
+        validateScheduleSlot(dt);
         LocalDateTime start = dt.minusMinutes(30);
         LocalDateTime end = dt.plusMinutes(30);
 
@@ -251,15 +253,11 @@ public class ShiftServiceImpl implements ShiftService {
         }
     }
 
-    private void validateDefaultSlot(LocalDateTime datetime) {
-        LocalTime time = datetime.toLocalTime();
-        boolean isInsideWorkingHours = !time.isBefore(DEFAULT_START_TIME) && !time.isAfter(DEFAULT_END_TIME);
-        boolean isValidStep = time.getMinute() % DEFAULT_SLOT_MINUTES == 0;
-
-        if (!isInsideWorkingHours || !isValidStep) {
+    private void validateScheduleSlot(LocalDateTime datetime) {
+        if (!scheduleSettingsService.isValidSlot(datetime.toLocalDate(), datetime.toLocalTime())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "The shift time must be between 10:00 and 20:00 in 30 minute intervals"
+                    "The shift time is not available for this date"
             );
         }
     }

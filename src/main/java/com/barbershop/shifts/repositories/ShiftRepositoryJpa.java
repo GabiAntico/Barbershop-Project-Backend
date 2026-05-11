@@ -29,6 +29,11 @@ public interface ShiftRepositoryJpa extends JpaRepository<Shift, Long> {
             LocalDateTime end,
             Collection<ShiftStatus> statuses
     );
+    boolean existsByDatetimeBetweenAndStatusIn(
+            LocalDateTime start,
+            LocalDateTime end,
+            Collection<ShiftStatus> statuses
+    );
 
 
 }
