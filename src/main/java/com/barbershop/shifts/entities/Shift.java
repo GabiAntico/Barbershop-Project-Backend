@@ -34,4 +34,8 @@ public class Shift {
 
     @Column(name="estimated_amount", precision = 10, scale = 2)
     private BigDecimal estimatedAmount;
+
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private User owner;
 }

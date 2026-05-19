@@ -3,8 +3,10 @@ package com.barbershop.shifts.services.implementations;
 import com.barbershop.shifts.dtos.settings.AppSettingsRequest;
 import com.barbershop.shifts.dtos.settings.AppSettingsResponse;
 import com.barbershop.shifts.entities.AppSettings;
+import com.barbershop.shifts.entities.User;
 import com.barbershop.shifts.repositories.AppSettingsRepositoryJpa;
 import com.barbershop.shifts.services.AppSettingsService;
+import com.barbershop.shifts.services.CurrentUserService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -12,13 +14,14 @@ import java.math.BigDecimal;
 @Service
 public class AppSettingsServiceImpl implements AppSettingsService {
 
-    private static final Long SETTINGS_ID = 1L;
     public static final String FALLBACK_DEFAULT_SLOTS = "10:00,10:30,11:00,11:30,12:00,12:30,13:00,13:30,14:00,14:30,15:00,15:30,16:00,16:30,17:00,17:30,18:00,18:30,19:00,19:30,20:00";
 
     private final AppSettingsRepositoryJpa appSettingsRepository;
+    private final CurrentUserService currentUserService;
 
-    public AppSettingsServiceImpl(AppSettingsRepositoryJpa appSettingsRepository) {
+    public AppSettingsServiceImpl(AppSettingsRepositoryJpa appSettingsRepository, CurrentUserService currentUserService) {
         this.appSettingsRepository = appSettingsRepository;
+        this.currentUserService = currentUserService;
     }
 
     @Override
@@ -35,13 +38,22 @@ public class AppSettingsServiceImpl implements AppSettingsService {
     }
 
     private AppSettings getOrCreateSettings() {
-        return appSettingsRepository.findById(SETTINGS_ID).orElseGet(() -> {
-            AppSettings settings = new AppSettings();
-            settings.setId(SETTINGS_ID);
-            settings.setDefaultEstimatedAmount(BigDecimal.ZERO);
+        User owner = currentUserService.getCurrentUser();
+
+        AppSettings settings = appSettingsRepository.findByOwner(owner).orElseGet(() -> {
+            AppSettings created = new AppSettings();
+            created.setDefaultEstimatedAmount(BigDecimal.ZERO);
+            created.setDefaultScheduleSlots(FALLBACK_DEFAULT_SLOTS);
+            created.setOwner(owner);
+            return appSettingsRepository.save(created);
+        });
+
+        if (settings.getDefaultScheduleSlots() == null || settings.getDefaultScheduleSlots().trim().isEmpty()) {
             settings.setDefaultScheduleSlots(FALLBACK_DEFAULT_SLOTS);
             return appSettingsRepository.save(settings);
-        });
+        }
+
+        return settings;
     }
 
     private AppSettingsResponse convertEntityIntoDto(AppSettings settings) {

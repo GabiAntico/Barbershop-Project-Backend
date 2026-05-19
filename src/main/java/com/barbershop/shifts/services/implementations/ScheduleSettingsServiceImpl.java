@@ -7,9 +7,11 @@ import com.barbershop.shifts.entities.AppSettings;
 import com.barbershop.shifts.entities.ScheduleOverride;
 import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.entities.ShiftStatus;
+import com.barbershop.shifts.entities.User;
 import com.barbershop.shifts.repositories.AppSettingsRepositoryJpa;
 import com.barbershop.shifts.repositories.ScheduleOverrideRepositoryJpa;
 import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
+import com.barbershop.shifts.services.CurrentUserService;
 import com.barbershop.shifts.services.ScheduleSettingsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,7 +31,6 @@ import java.util.stream.Collectors;
 @Service
 public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
 
-    private static final Long SETTINGS_ID = 1L;
     private static final int MIN_SLOT_DISTANCE_MINUTES = 30;
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     private static final List<ShiftStatus> BLOCKING_STATUSES = List.of(ShiftStatus.PENDING, ShiftStatus.COMPLETED);
@@ -37,15 +38,18 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
     private final AppSettingsRepositoryJpa appSettingsRepository;
     private final ScheduleOverrideRepositoryJpa scheduleOverrideRepository;
     private final ShiftRepositoryJpa shiftRepository;
+    private final CurrentUserService currentUserService;
 
     public ScheduleSettingsServiceImpl(
             AppSettingsRepositoryJpa appSettingsRepository,
             ScheduleOverrideRepositoryJpa scheduleOverrideRepository,
-            ShiftRepositoryJpa shiftRepository
+            ShiftRepositoryJpa shiftRepository,
+            CurrentUserService currentUserService
     ) {
         this.appSettingsRepository = appSettingsRepository;
         this.scheduleOverrideRepository = scheduleOverrideRepository;
         this.shiftRepository = shiftRepository;
+        this.currentUserService = currentUserService;
     }
 
     @Override
@@ -127,7 +131,9 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
 
     @Override
     public List<LocalTime> getSlotsForDate(LocalDate date) {
-        return scheduleOverrideRepository.findByDate(date)
+        User owner = currentUserService.getCurrentUser();
+
+        return scheduleOverrideRepository.findByOwnerAndDate(owner, date)
                 .map(override -> parseSlots(override.getSlots()))
                 .orElseGet(() -> parseSlots(getSettings().getDefaultScheduleSlots()));
     }
@@ -151,12 +157,7 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
         validateRange(startDate, endDate);
 
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
-            if (hasBlockingShifts(date)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The selected date range has shifts");
-            }
-        }
-
-        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            ensureOccupiedSlotsAreKept(date, slots);
             saveOverride(date, slots);
         }
     }
@@ -164,14 +165,15 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
     private void updateDefault(List<LocalTime> slots) {
         AppSettings settings = getSettings();
         String previousDefault = settings.getDefaultScheduleSlots();
+        User owner = currentUserService.getCurrentUser();
 
-        Set<LocalDate> datesWithShifts = shiftRepository.findAll().stream()
+        Set<LocalDate> datesWithShifts = shiftRepository.findAllByOwner(owner).stream()
                 .filter(shift -> BLOCKING_STATUSES.contains(shift.getStatus()))
                 .map(shift -> shift.getDatetime().toLocalDate())
                 .collect(Collectors.toSet());
 
         for (LocalDate date : datesWithShifts) {
-            if (scheduleOverrideRepository.findByDate(date).isEmpty()) {
+            if (scheduleOverrideRepository.findByOwnerAndDate(owner, date).isEmpty()) {
                 saveOverride(date, parseSlots(previousDefault));
             }
         }
@@ -181,9 +183,12 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
     }
 
     private void saveOverride(LocalDate date, List<LocalTime> slots) {
-        ScheduleOverride override = scheduleOverrideRepository.findByDate(date).orElseGet(ScheduleOverride::new);
+        User owner = currentUserService.getCurrentUser();
+
+        ScheduleOverride override = scheduleOverrideRepository.findByOwnerAndDate(owner, date).orElseGet(ScheduleOverride::new);
         override.setDate(date);
         override.setSlots(formatSlots(slots));
+        override.setOwner(owner);
         scheduleOverrideRepository.save(override);
     }
 
@@ -199,14 +204,18 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.plusDays(1).atStartOfDay().minusNanos(1);
 
-        return shiftRepository.existsByDatetimeBetweenAndStatusIn(start, end, BLOCKING_STATUSES);
+        User owner = currentUserService.getCurrentUser();
+
+        return shiftRepository.existsByDatetimeBetweenAndStatusInAndOwner(start, end, BLOCKING_STATUSES, owner);
     }
 
     private Set<LocalTime> getOccupiedTimes(LocalDate date) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.plusDays(1).atStartOfDay().minusNanos(1);
 
-        return shiftRepository.findByDatetimeBetweenAndStatusIn(start, end, BLOCKING_STATUSES)
+        User owner = currentUserService.getCurrentUser();
+
+        return shiftRepository.findByDatetimeBetweenAndStatusInAndOwner(start, end, BLOCKING_STATUSES, owner)
                 .stream()
                 .map(Shift::getDatetime)
                 .map(LocalDateTime::toLocalTime)
@@ -218,7 +227,9 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.plusDays(1).atStartOfDay().minusNanos(1);
 
-        return shiftRepository.findByDatetimeBetweenAndStatusIn(start, end, BLOCKING_STATUSES)
+        User owner = currentUserService.getCurrentUser();
+
+        return shiftRepository.findByDatetimeBetweenAndStatusInAndOwner(start, end, BLOCKING_STATUSES, owner)
                 .stream()
                 .map(Shift::getDatetime)
                 .map(LocalDateTime::toLocalTime)
@@ -311,11 +322,13 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
     }
 
     private AppSettings getSettings() {
-        AppSettings settings = appSettingsRepository.findById(SETTINGS_ID).orElseGet(() -> {
+        User owner = currentUserService.getCurrentUser();
+
+        AppSettings settings = appSettingsRepository.findByOwner(owner).orElseGet(() -> {
             AppSettings created = new AppSettings();
-            created.setId(SETTINGS_ID);
             created.setDefaultEstimatedAmount(java.math.BigDecimal.ZERO);
             created.setDefaultScheduleSlots(AppSettingsServiceImpl.FALLBACK_DEFAULT_SLOTS);
+            created.setOwner(owner);
             return appSettingsRepository.save(created);
         });
 

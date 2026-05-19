@@ -4,8 +4,10 @@ import com.barbershop.shifts.dtos.clients.ClientRequest;
 import com.barbershop.shifts.dtos.clients.ClientResponse;
 import com.barbershop.shifts.dtos.clients.CreationClientRequest;
 import com.barbershop.shifts.entities.Client;
+import com.barbershop.shifts.entities.User;
 import com.barbershop.shifts.repositories.ClientRepositoryJpa;
 import com.barbershop.shifts.services.ClientService;
+import com.barbershop.shifts.services.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,16 +23,21 @@ public class ClientServiceImpl implements ClientService {
     @Autowired
     private ClientRepositoryJpa clientRepository;
 
+    @Autowired
+    private CurrentUserService currentUserService;
+
     @Override
     public ClientResponse createClient(CreationClientRequest clientRequest) {
+        User owner = currentUserService.getCurrentUser();
         Client client = new Client();
         client.setEmail(normalize(clientRequest.getEmail()));
         client.setPhoneNumber(normalize(clientRequest.getPhoneNumber()));
         client.setFirstName(normalize(clientRequest.getFirstName()));
         client.setLastName(normalize(clientRequest.getLastName()));
         client.setDocumentNumber(normalize(clientRequest.getDocumentNumber()));
+        client.setOwner(owner);
 
-        if(client.getEmail() != null && clientRepository.existsByEmail(client.getEmail())) {
+        if(client.getEmail() != null && clientRepository.existsByEmailAndOwner(client.getEmail(), owner)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
         }
 
@@ -47,6 +54,7 @@ public class ClientServiceImpl implements ClientService {
         }
 
         Client actualClient = getClientByIdRaw(newClient.getId());
+        User owner = currentUserService.getCurrentUser();
 
         Client client = new Client();
         client.setId(newClient.getId());
@@ -55,8 +63,9 @@ public class ClientServiceImpl implements ClientService {
         client.setFirstName(normalize(newClient.getFirstName()));
         client.setLastName(normalize(newClient.getLastName()));
         client.setDocumentNumber(normalize(newClient.getDocumentNumber()));
+        client.setOwner(owner);
 
-        if(client.getEmail() != null && clientRepository.existsByEmailAndIdNot(client.getEmail(), client.getId())) {
+        if(client.getEmail() != null && clientRepository.existsByEmailAndIdNotAndOwner(client.getEmail(), client.getId(), owner)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
         }
 
@@ -88,7 +97,9 @@ public class ClientServiceImpl implements ClientService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
         }
 
-        return clientRepository.findById(id).orElseThrow(() ->
+        User owner = currentUserService.getCurrentUser();
+
+        return clientRepository.findByIdAndOwner(id, owner).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found"));
     }
 
@@ -101,7 +112,8 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public List<ClientResponse> getAllClients() {
-        List<Client> clients = clientRepository.findAll();
+        User owner = currentUserService.getCurrentUser();
+        List<Client> clients = clientRepository.findAllByOwner(owner);
 
         List<ClientResponse> clientsDtos = new ArrayList();
 

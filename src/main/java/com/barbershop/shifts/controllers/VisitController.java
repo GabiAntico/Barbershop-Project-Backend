@@ -1,6 +1,7 @@
 package com.barbershop.shifts.controllers;
 
 import com.barbershop.shifts.dtos.visits.CreationVisitRequest;
+import com.barbershop.shifts.dtos.visits.UpdateVisitRequest;
 import com.barbershop.shifts.dtos.visits.VisitResponse;
 import com.barbershop.shifts.services.VisitService;
 import jakarta.validation.Valid;
@@ -36,5 +37,13 @@ public class VisitController {
         URI location = URI.create("/api/visits/" + createdVisit.getId());
 
         return ResponseEntity.created(location).body(createdVisit);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<VisitResponse> updateVisit(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateVisitRequest visitRequest
+    ){
+        return ResponseEntity.ok(visitService.updateVisit(id, visitRequest));
     }
 }

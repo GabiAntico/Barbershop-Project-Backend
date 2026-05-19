@@ -29,4 +29,8 @@ public class Client {
 
     @Column(name = "document_number")
     private String documentNumber;
+
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private User owner;
 }
