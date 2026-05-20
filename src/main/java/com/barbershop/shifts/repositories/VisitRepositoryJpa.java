@@ -14,4 +14,11 @@ public interface VisitRepositoryJpa extends JpaRepository<Visit, Long> {
     List<Visit> findAllByShiftOwner(User owner);
     Optional<Visit> findByIdAndShiftOwner(Long id, User owner);
     List<Visit> findByShiftDatetimeBetweenAndShiftOwner(LocalDateTime start, LocalDateTime end, User owner);
+    List<Visit> findByShiftClientIdAndShiftDatetimeBetweenAndShiftOwner(
+            Long clientId,
+            LocalDateTime start,
+            LocalDateTime end,
+            User owner
+    );
+    List<Visit> findByShiftClientIdAndShiftOwner(Long clientId, User owner);
 }

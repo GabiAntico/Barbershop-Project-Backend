@@ -56,6 +56,12 @@ public interface ShiftRepositoryJpa extends JpaRepository<Shift, Long> {
             LocalDateTime end,
             User owner
     );
+    List<Shift> findByClientIdAndDatetimeBetweenAndOwner(
+            Long clientId,
+            LocalDateTime start,
+            LocalDateTime end,
+            User owner
+    );
     boolean existsByDatetimeBetweenAndStatusIn(
             LocalDateTime start,
             LocalDateTime end,

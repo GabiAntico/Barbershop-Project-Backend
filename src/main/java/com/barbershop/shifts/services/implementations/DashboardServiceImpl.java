@@ -1,11 +1,14 @@
 package com.barbershop.shifts.services.implementations;
 
+import com.barbershop.shifts.dtos.dashboard.ClientDashboardResponse;
 import com.barbershop.shifts.dtos.dashboard.DashboardResponse;
+import com.barbershop.shifts.entities.Client;
 import com.barbershop.shifts.entities.PaymentStatus;
 import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.entities.ShiftStatus;
 import com.barbershop.shifts.entities.User;
 import com.barbershop.shifts.entities.Visit;
+import com.barbershop.shifts.repositories.ClientRepositoryJpa;
 import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
 import com.barbershop.shifts.repositories.VisitRepositoryJpa;
 import com.barbershop.shifts.services.CurrentUserService;
@@ -18,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 
 @Service
@@ -25,15 +29,18 @@ public class DashboardServiceImpl implements DashboardService {
 
     private final ShiftRepositoryJpa shiftRepository;
     private final VisitRepositoryJpa visitRepository;
+    private final ClientRepositoryJpa clientRepository;
     private final CurrentUserService currentUserService;
 
     public DashboardServiceImpl(
             ShiftRepositoryJpa shiftRepository,
             VisitRepositoryJpa visitRepository,
+            ClientRepositoryJpa clientRepository,
             CurrentUserService currentUserService
     ) {
         this.shiftRepository = shiftRepository;
         this.visitRepository = visitRepository;
+        this.clientRepository = clientRepository;
         this.currentUserService = currentUserService;
     }
 
@@ -51,6 +58,38 @@ public class DashboardServiceImpl implements DashboardService {
         DashboardResponse response = new DashboardResponse();
         response.setRevenue(buildRevenueStats(visits));
         response.setAttendance(buildAttendanceStats(shifts));
+
+        return response;
+    }
+
+    @Override
+    public ClientDashboardResponse getClientDashboard(Long clientId, YearMonth month) {
+        if (clientId == null || clientId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Client id is required");
+        }
+
+        if (month == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Month is required");
+        }
+
+        User owner = currentUserService.getCurrentUser();
+        Client client = clientRepository.findByIdAndOwner(clientId, owner)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Client not found"));
+
+        LocalDate startDate = month.atDay(1);
+        LocalDate endDate = month.atEndOfMonth();
+        LocalDateTime start = startDate.atStartOfDay();
+        LocalDateTime end = endDate.plusDays(1).atStartOfDay().minusNanos(1);
+
+        List<Shift> shifts = shiftRepository.findByClientIdAndDatetimeBetweenAndOwner(clientId, start, end, owner);
+        List<Visit> selectedMonthVisits = visitRepository.findByShiftClientIdAndShiftDatetimeBetweenAndShiftOwner(clientId, start, end, owner);
+        List<Visit> historicalVisits = visitRepository.findByShiftClientIdAndShiftOwner(clientId, owner);
+
+        ClientDashboardResponse response = new ClientDashboardResponse();
+        response.setClient(buildClientStats(client));
+        response.setAttendance(buildAttendanceStats(shifts));
+        response.setSelectedMonthRevenue(buildRevenueStats(selectedMonthVisits));
+        response.setHistoricalRevenue(buildRevenueStats(historicalVisits));
 
         return response;
     }
@@ -117,5 +156,16 @@ public class DashboardServiceImpl implements DashboardService {
         if (endDate.isBefore(startDate)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End date can't be before start date");
         }
+    }
+
+    private ClientDashboardResponse.ClientStats buildClientStats(Client client) {
+        ClientDashboardResponse.ClientStats stats = new ClientDashboardResponse.ClientStats();
+        stats.setId(client.getId());
+        stats.setFirstName(client.getFirstName());
+        stats.setLastName(client.getLastName());
+        stats.setPhoneNumber(client.getPhoneNumber());
+        stats.setEmail(client.getEmail());
+
+        return stats;
     }
 }
