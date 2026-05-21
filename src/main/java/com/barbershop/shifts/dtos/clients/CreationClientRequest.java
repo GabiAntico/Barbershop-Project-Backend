@@ -18,4 +18,6 @@ public class CreationClientRequest {
     private String lastName;
 
     private String documentNumber;
+
+    private String notes;
 }

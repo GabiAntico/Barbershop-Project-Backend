@@ -4,26 +4,26 @@ WHERE NOT EXISTS (
     SELECT 1 FROM users WHERE email = 'admin@barbershop.com'
 );
 
-INSERT INTO clients (email, phone_number, first_name, last_name, document_number, owner_id)
-SELECT 'juan.perez@email.com', '3513727258', 'Juan', 'Perez', '30111222', u.id
+INSERT INTO clients (email, phone_number, first_name, last_name, document_number, notes, owner_id)
+SELECT 'juan.perez@email.com', '3513727258', 'Juan', 'Perez', '30111222', 'Prefiere degradado bajo y barba prolija.', u.id
 FROM users u
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM clients c WHERE c.phone_number = '3513727258' AND c.owner_id = u.id);
 
-INSERT INTO clients (email, phone_number, first_name, last_name, document_number, owner_id)
-SELECT 'martin.gomez@email.com', '3513339999', 'Martin', 'Gomez', '32444555', u.id
+INSERT INTO clients (email, phone_number, first_name, last_name, document_number, notes, owner_id)
+SELECT 'martin.gomez@email.com', '3513339999', 'Martin', 'Gomez', '32444555', 'Suele venir despues del trabajo.', u.id
 FROM users u
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM clients c WHERE c.phone_number = '3513339999' AND c.owner_id = u.id);
 
-INSERT INTO clients (email, phone_number, first_name, last_name, document_number, owner_id)
-SELECT NULL, '3511117777', NULL, 'Antico', NULL, u.id
+INSERT INTO clients (email, phone_number, first_name, last_name, document_number, notes, owner_id)
+SELECT NULL, '3511117777', NULL, 'Antico', NULL, 'Cliente cargado solo con apellido y telefono.', u.id
 FROM users u
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM clients c WHERE c.phone_number = '3511117777' AND c.owner_id = u.id);
 
-INSERT INTO clients (email, phone_number, first_name, last_name, document_number, owner_id)
-SELECT 'gabiantico@gmail.com', '3512228888', NULL, NULL, NULL, u.id
+INSERT INTO clients (email, phone_number, first_name, last_name, document_number, notes, owner_id)
+SELECT 'gabiantico@gmail.com', '3512228888', NULL, NULL, NULL, 'Sin nombre guardado, contactar por telefono.', u.id
 FROM users u
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM clients c WHERE c.phone_number = '3512228888' AND c.owner_id = u.id);

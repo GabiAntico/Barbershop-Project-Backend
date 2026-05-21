@@ -19,9 +19,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -90,6 +92,7 @@ public class DashboardServiceImpl implements DashboardService {
         response.setAttendance(buildAttendanceStats(shifts));
         response.setSelectedMonthRevenue(buildRevenueStats(selectedMonthVisits));
         response.setHistoricalRevenue(buildRevenueStats(historicalVisits));
+        response.setVisitFrequency(buildVisitFrequencyStats(historicalVisits));
 
         return response;
     }
@@ -165,6 +168,34 @@ public class DashboardServiceImpl implements DashboardService {
         stats.setLastName(client.getLastName());
         stats.setPhoneNumber(client.getPhoneNumber());
         stats.setEmail(client.getEmail());
+        stats.setNotes(client.getNotes());
+
+        return stats;
+    }
+
+    private ClientDashboardResponse.VisitFrequencyStats buildVisitFrequencyStats(List<Visit> visits) {
+        List<LocalDateTime> dates = visits.stream()
+                .map(visit -> visit.getShift().getDatetime())
+                .sorted()
+                .toList();
+
+        ClientDashboardResponse.VisitFrequencyStats stats = new ClientDashboardResponse.VisitFrequencyStats();
+        stats.setVisitsCount((long) dates.size());
+        stats.setLastVisitAt(dates.stream().max(Comparator.naturalOrder()).orElse(null));
+
+        if (dates.size() < 2) {
+            stats.setAverageDaysBetweenVisits(null);
+            return stats;
+        }
+
+        long totalDays = 0;
+        for (int i = 1; i < dates.size(); i++) {
+            long gapDays = Duration.between(dates.get(i - 1), dates.get(i)).toDays();
+            totalDays += Math.max(gapDays, 1);
+        }
+
+        double average = (double) totalDays / (dates.size() - 1);
+        stats.setAverageDaysBetweenVisits((int) Math.ceil(average));
 
         return stats;
     }

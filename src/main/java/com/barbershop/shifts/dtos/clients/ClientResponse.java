@@ -10,4 +10,5 @@ public class ClientResponse {
     private String firstName;
     private String lastName;
     private String documentNumber;
+    private String notes;
 }

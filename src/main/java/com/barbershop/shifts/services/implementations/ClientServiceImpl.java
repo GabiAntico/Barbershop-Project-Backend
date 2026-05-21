@@ -35,6 +35,7 @@ public class ClientServiceImpl implements ClientService {
         client.setFirstName(normalize(clientRequest.getFirstName()));
         client.setLastName(normalize(clientRequest.getLastName()));
         client.setDocumentNumber(normalize(clientRequest.getDocumentNumber()));
+        client.setNotes(normalize(clientRequest.getNotes()));
         client.setOwner(owner);
 
         if(client.getEmail() != null && clientRepository.existsByEmailAndOwner(client.getEmail(), owner)) {
@@ -63,6 +64,7 @@ public class ClientServiceImpl implements ClientService {
         client.setFirstName(normalize(newClient.getFirstName()));
         client.setLastName(normalize(newClient.getLastName()));
         client.setDocumentNumber(normalize(newClient.getDocumentNumber()));
+        client.setNotes(normalize(newClient.getNotes()));
         client.setOwner(owner);
 
         if(client.getEmail() != null && clientRepository.existsByEmailAndIdNotAndOwner(client.getEmail(), client.getId(), owner)) {
@@ -133,6 +135,7 @@ public class ClientServiceImpl implements ClientService {
         clientResponse.setFirstName(client.getFirstName());
         clientResponse.setLastName(client.getLastName());
         clientResponse.setDocumentNumber(client.getDocumentNumber());
+        clientResponse.setNotes(client.getNotes());
 
         return clientResponse;
     }
@@ -143,7 +146,8 @@ public class ClientServiceImpl implements ClientService {
                 Objects.equals(instance1.getPhoneNumber(), instance2.getPhoneNumber()) &&
                 Objects.equals(instance1.getFirstName(), instance2.getFirstName()) &&
                 Objects.equals(instance1.getLastName(), instance2.getLastName()) &&
-                Objects.equals(instance1.getDocumentNumber(), instance2.getDocumentNumber());
+                Objects.equals(instance1.getDocumentNumber(), instance2.getDocumentNumber()) &&
+                Objects.equals(instance1.getNotes(), instance2.getNotes());
     }
 
     private String normalize(String value) {

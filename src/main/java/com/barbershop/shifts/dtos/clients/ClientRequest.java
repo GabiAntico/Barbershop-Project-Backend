@@ -22,4 +22,6 @@ public class ClientRequest {
     private String lastName;
 
     private String documentNumber;
+
+    private String notes;
 }
