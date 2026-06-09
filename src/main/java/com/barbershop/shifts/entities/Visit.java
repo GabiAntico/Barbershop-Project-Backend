@@ -23,6 +23,10 @@ public class Visit {
     @JoinColumn(name = "shift_id", nullable = false, unique = true)
     private Shift shift;
 
+    @ManyToOne
+    @JoinColumn(name = "attended_by_user_id")
+    private User attendedBy;
+
     @Column(name = "total_amount", precision = 10, scale = 2, nullable = false)
     private BigDecimal totalAmount;
 

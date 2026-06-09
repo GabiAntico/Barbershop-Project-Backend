@@ -1,0 +1,11 @@
+target
+.idea
+.vscode
+*.iml
+*.log
+.DS_Store
+
+# Keep Maven Wrapper files available for Docker builds.
+!.mvn/wrapper/maven-wrapper.jar
+!mvnw
+!mvnw.cmd

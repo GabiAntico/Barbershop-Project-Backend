@@ -1,6 +1,7 @@
 package com.barbershop.shifts.repositories;
 
 import com.barbershop.shifts.entities.ScheduleOverride;
+import com.barbershop.shifts.entities.Branch;
 import com.barbershop.shifts.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,4 +16,6 @@ public interface ScheduleOverrideRepositoryJpa extends JpaRepository<ScheduleOve
     List<ScheduleOverride> findByDateBetween(LocalDate startDate, LocalDate endDate);
     Optional<ScheduleOverride> findByOwnerAndDate(User owner, LocalDate date);
     List<ScheduleOverride> findByOwnerAndDateBetween(User owner, LocalDate startDate, LocalDate endDate);
+    Optional<ScheduleOverride> findByBranchAndDate(Branch branch, LocalDate date);
+    List<ScheduleOverride> findByBranchAndDateBetween(Branch branch, LocalDate startDate, LocalDate endDate);
 }

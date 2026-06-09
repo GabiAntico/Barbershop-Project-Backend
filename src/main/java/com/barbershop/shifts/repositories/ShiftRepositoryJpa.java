@@ -2,6 +2,7 @@ package com.barbershop.shifts.repositories;
 
 import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.entities.ShiftStatus;
+import com.barbershop.shifts.entities.Branch;
 import com.barbershop.shifts.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -16,6 +17,8 @@ public interface ShiftRepositoryJpa extends JpaRepository<Shift, Long> {
     Optional<Shift> findByDatetime(LocalDateTime dateTime);
     List<Shift> findAllByOwner(User owner);
     Optional<Shift> findByIdAndOwner(Long id, User owner);
+    List<Shift> findAllByBranch(Branch branch);
+    Optional<Shift> findByIdAndBranch(Long id, Branch branch);
     boolean existsByDatetimeAfterAndDatetimeBeforeAndIdNotAndStatusIn(
             LocalDateTime start,
             LocalDateTime end,
@@ -33,12 +36,25 @@ public interface ShiftRepositoryJpa extends JpaRepository<Shift, Long> {
             Collection<ShiftStatus> statuses,
             User owner
     );
+    boolean existsByDatetimeAfterAndDatetimeBeforeAndStatusInAndBranch(
+            LocalDateTime start,
+            LocalDateTime end,
+            Collection<ShiftStatus> statuses,
+            Branch branch
+    );
     boolean existsByDatetimeAfterAndDatetimeBeforeAndIdNotAndStatusInAndOwner(
             LocalDateTime start,
             LocalDateTime end,
             Long id,
             Collection<ShiftStatus> statuses,
             User owner
+    );
+    boolean existsByDatetimeAfterAndDatetimeBeforeAndIdNotAndStatusInAndBranch(
+            LocalDateTime start,
+            LocalDateTime end,
+            Long id,
+            Collection<ShiftStatus> statuses,
+            Branch branch
     );
     List<Shift> findByDatetimeBetweenAndStatusIn(
             LocalDateTime start,
@@ -51,16 +67,33 @@ public interface ShiftRepositoryJpa extends JpaRepository<Shift, Long> {
             Collection<ShiftStatus> statuses,
             User owner
     );
+    List<Shift> findByDatetimeBetweenAndStatusInAndBranch(
+            LocalDateTime start,
+            LocalDateTime end,
+            Collection<ShiftStatus> statuses,
+            Branch branch
+    );
     List<Shift> findByDatetimeBetweenAndOwner(
             LocalDateTime start,
             LocalDateTime end,
             User owner
+    );
+    List<Shift> findByDatetimeBetweenAndBranch(
+            LocalDateTime start,
+            LocalDateTime end,
+            Branch branch
     );
     List<Shift> findByClientIdAndDatetimeBetweenAndOwner(
             Long clientId,
             LocalDateTime start,
             LocalDateTime end,
             User owner
+    );
+    List<Shift> findByClientIdAndDatetimeBetweenAndBranch(
+            Long clientId,
+            LocalDateTime start,
+            LocalDateTime end,
+            Branch branch
     );
     boolean existsByDatetimeBetweenAndStatusIn(
             LocalDateTime start,
@@ -72,6 +105,12 @@ public interface ShiftRepositoryJpa extends JpaRepository<Shift, Long> {
             LocalDateTime end,
             Collection<ShiftStatus> statuses,
             User owner
+    );
+    boolean existsByDatetimeBetweenAndStatusInAndBranch(
+            LocalDateTime start,
+            LocalDateTime end,
+            Collection<ShiftStatus> statuses,
+            Branch branch
     );
 
 

@@ -1,6 +1,7 @@
 package com.barbershop.shifts.repositories;
 
 import com.barbershop.shifts.entities.Client;
+import com.barbershop.shifts.entities.Barbershop;
 import com.barbershop.shifts.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,4 +15,8 @@ public interface ClientRepositoryJpa extends JpaRepository<Client, Long> {
     Optional<Client> findByIdAndOwner(Long id, User owner);
     boolean existsByEmailAndOwner(String email, User owner);
     boolean existsByEmailAndIdNotAndOwner(String email, Long id, User owner);
+    List<Client> findAllByBarbershop(Barbershop barbershop);
+    Optional<Client> findByIdAndBarbershop(Long id, Barbershop barbershop);
+    boolean existsByEmailAndBarbershop(String email, Barbershop barbershop);
+    boolean existsByEmailAndIdNotAndBarbershop(String email, Long id, Barbershop barbershop);
 }

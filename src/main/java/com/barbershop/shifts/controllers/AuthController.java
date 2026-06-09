@@ -1,5 +1,6 @@
 package com.barbershop.shifts.controllers;
 
+import com.barbershop.shifts.dtos.auth.ChangePasswordRequest;
 import com.barbershop.shifts.dtos.auth.LoginRequest;
 import com.barbershop.shifts.dtos.auth.LoginResponse;
 import com.barbershop.shifts.dtos.auth.RegisterRequest;
@@ -47,5 +48,11 @@ public class AuthController {
     public ResponseEntity<Void> register(@RequestBody RegisterRequest request) {
         authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request.currentPassword(), request.newPassword());
+        return ResponseEntity.noContent().build();
     }
 }

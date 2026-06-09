@@ -7,6 +7,7 @@ import com.barbershop.shifts.dtos.shifts.ShiftCompleteResponse;
 import com.barbershop.shifts.dtos.shifts.ShiftResponse;
 import com.barbershop.shifts.dtos.shifts.TimeSlotAvailabilityResponse;
 import com.barbershop.shifts.dtos.shifts.UpdateShiftRequest;
+import com.barbershop.shifts.entities.Branch;
 import com.barbershop.shifts.entities.Client;
 import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.entities.ShiftStatus;
@@ -50,8 +51,8 @@ public class ShiftServiceImpl implements ShiftService {
 
     @Override
     public List<ShiftResponse> getAllShifts() {
-        User owner = currentUserService.getCurrentUser();
-        List<Shift> shifts = shiftRepository.findAllByOwner(owner);
+        Branch branch = currentUserService.getCurrentBranch();
+        List<Shift> shifts = shiftRepository.findAllByBranch(branch);
 
         List<ShiftResponse> shiftsDtos = new ArrayList();
         for(Shift shift : shifts){
@@ -64,8 +65,8 @@ public class ShiftServiceImpl implements ShiftService {
     @Override
     public List<ShiftCompleteResponse> getAllCompleteShifts(){
 
-        User owner = currentUserService.getCurrentUser();
-        List<Shift> shifts = shiftRepository.findAllByOwner(owner);
+        Branch branch = currentUserService.getCurrentBranch();
+        List<Shift> shifts = shiftRepository.findAllByBranch(branch);
 
         List<ShiftCompleteResponse> shiftsConverted = new ArrayList();
         for(Shift shift : shifts){
@@ -88,9 +89,9 @@ public class ShiftServiceImpl implements ShiftService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
         }
 
-        User owner = currentUserService.getCurrentUser();
+        Branch branch = currentUserService.getCurrentBranch();
 
-        return shiftRepository.findByIdAndOwner(id, owner).orElseThrow(() ->
+        return shiftRepository.findByIdAndBranch(id, branch).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found"));
     }
 
@@ -99,8 +100,8 @@ public class ShiftServiceImpl implements ShiftService {
         LocalDateTime dayStart = date.atStartOfDay();
         LocalDateTime dayEnd = date.plusDays(1).atStartOfDay().minusNanos(1);
         List<ShiftStatus> blocking = List.of(ShiftStatus.PENDING, ShiftStatus.COMPLETED);
-        User owner = currentUserService.getCurrentUser();
-        List<Shift> blockingShifts = shiftRepository.findByDatetimeBetweenAndStatusInAndOwner(dayStart, dayEnd, blocking, owner)
+        Branch branch = currentUserService.getCurrentBranch();
+        List<Shift> blockingShifts = shiftRepository.findByDatetimeBetweenAndStatusInAndBranch(dayStart, dayEnd, blocking, branch)
                 .stream()
                 .filter(shift -> !Objects.equals(shift.getId(), excludeShiftId))
                 .toList();
@@ -123,8 +124,8 @@ public class ShiftServiceImpl implements ShiftService {
         LocalDateTime dayStart = date.atStartOfDay();
         LocalDateTime dayEnd = date.plusDays(1).atStartOfDay().minusNanos(1);
         List<ShiftStatus> blocking = List.of(ShiftStatus.PENDING, ShiftStatus.COMPLETED);
-        User owner = currentUserService.getCurrentUser();
-        List<Shift> blockingShifts = shiftRepository.findByDatetimeBetweenAndStatusInAndOwner(dayStart, dayEnd, blocking, owner);
+        Branch branch = currentUserService.getCurrentBranch();
+        List<Shift> blockingShifts = shiftRepository.findByDatetimeBetweenAndStatusInAndBranch(dayStart, dayEnd, blocking, branch);
         LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
 
         List<AgendaSlotResponse> agenda = new ArrayList<>();
@@ -154,10 +155,11 @@ public class ShiftServiceImpl implements ShiftService {
 
         Client client = clientService.getClientByIdRaw(shiftRequest.getClientId());
         User owner = currentUserService.getCurrentUser();
+        Branch branch = currentUserService.getCurrentBranch();
 
         List<ShiftStatus> blocking = List.of(ShiftStatus.PENDING, ShiftStatus.COMPLETED);
 
-        if (shiftRepository.existsByDatetimeAfterAndDatetimeBeforeAndStatusInAndOwner(start, end, blocking, owner)) {
+        if (shiftRepository.existsByDatetimeAfterAndDatetimeBeforeAndStatusInAndBranch(start, end, blocking, branch)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "There is already a shift within 30 minutes of this time"
@@ -170,6 +172,7 @@ public class ShiftServiceImpl implements ShiftService {
         shift.setStatus(ShiftStatus.PENDING);
         shift.setEstimatedAmount(shiftRequest.getEstimatedAmount());
         shift.setOwner(owner);
+        shift.setBranch(branch);
 
         Shift shiftSaved = shiftRepository.save(shift);
 
@@ -187,7 +190,7 @@ public class ShiftServiceImpl implements ShiftService {
 
         Shift actualShift = getShiftByIdRaw(id);
         Client newClient = clientService.getClientByIdRaw(shiftRequest.getClientId());
-        User owner = currentUserService.getCurrentUser();
+        Branch branch = currentUserService.getCurrentBranch();
 
         LocalDateTime dt = shiftRequest.getDatetime().withSecond(0).withNano(0);
         validateScheduleSlot(dt);
@@ -196,7 +199,7 @@ public class ShiftServiceImpl implements ShiftService {
 
         List<ShiftStatus> blocking = List.of(ShiftStatus.PENDING, ShiftStatus.COMPLETED);
 
-        if (shiftRepository.existsByDatetimeAfterAndDatetimeBeforeAndIdNotAndStatusInAndOwner(start, end, id, blocking, owner)) {
+        if (shiftRepository.existsByDatetimeAfterAndDatetimeBeforeAndIdNotAndStatusInAndBranch(start, end, id, blocking, branch)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "There is already a shift within 30 minutes of this time"

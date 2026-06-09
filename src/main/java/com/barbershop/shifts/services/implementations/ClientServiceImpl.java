@@ -37,8 +37,9 @@ public class ClientServiceImpl implements ClientService {
         client.setDocumentNumber(normalize(clientRequest.getDocumentNumber()));
         client.setNotes(normalize(clientRequest.getNotes()));
         client.setOwner(owner);
+        client.setBarbershop(owner.getBarbershop());
 
-        if(client.getEmail() != null && clientRepository.existsByEmailAndOwner(client.getEmail(), owner)) {
+        if(client.getEmail() != null && clientRepository.existsByEmailAndBarbershop(client.getEmail(), owner.getBarbershop())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
         }
 
@@ -65,9 +66,10 @@ public class ClientServiceImpl implements ClientService {
         client.setLastName(normalize(newClient.getLastName()));
         client.setDocumentNumber(normalize(newClient.getDocumentNumber()));
         client.setNotes(normalize(newClient.getNotes()));
-        client.setOwner(owner);
+        client.setOwner(actualClient.getOwner());
+        client.setBarbershop(owner.getBarbershop());
 
-        if(client.getEmail() != null && clientRepository.existsByEmailAndIdNotAndOwner(client.getEmail(), client.getId(), owner)) {
+        if(client.getEmail() != null && clientRepository.existsByEmailAndIdNotAndBarbershop(client.getEmail(), client.getId(), owner.getBarbershop())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
         }
 
@@ -101,7 +103,7 @@ public class ClientServiceImpl implements ClientService {
 
         User owner = currentUserService.getCurrentUser();
 
-        return clientRepository.findByIdAndOwner(id, owner).orElseThrow(() ->
+        return clientRepository.findByIdAndBarbershop(id, owner.getBarbershop()).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found"));
     }
 
@@ -115,7 +117,7 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public List<ClientResponse> getAllClients() {
         User owner = currentUserService.getCurrentUser();
-        List<Client> clients = clientRepository.findAllByOwner(owner);
+        List<Client> clients = clientRepository.findAllByBarbershop(owner.getBarbershop());
 
         List<ClientResponse> clientsDtos = new ArrayList();
 

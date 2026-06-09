@@ -2,6 +2,7 @@ package com.barbershop.shifts.services.implementations;
 
 import com.barbershop.shifts.dtos.dashboard.ClientDashboardResponse;
 import com.barbershop.shifts.dtos.dashboard.DashboardResponse;
+import com.barbershop.shifts.entities.Branch;
 import com.barbershop.shifts.entities.Client;
 import com.barbershop.shifts.entities.PaymentStatus;
 import com.barbershop.shifts.entities.Shift;
@@ -50,12 +51,12 @@ public class DashboardServiceImpl implements DashboardService {
     public DashboardResponse getDashboard(LocalDate startDate, LocalDate endDate) {
         validateRange(startDate, endDate);
 
-        User owner = currentUserService.getCurrentUser();
+        Branch branch = currentUserService.getCurrentBranch();
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.plusDays(1).atStartOfDay().minusNanos(1);
 
-        List<Shift> shifts = shiftRepository.findByDatetimeBetweenAndOwner(start, end, owner);
-        List<Visit> visits = visitRepository.findByShiftDatetimeBetweenAndShiftOwner(start, end, owner);
+        List<Shift> shifts = shiftRepository.findByDatetimeBetweenAndBranch(start, end, branch);
+        List<Visit> visits = visitRepository.findByShiftDatetimeBetweenAndShiftBranch(start, end, branch);
 
         DashboardResponse response = new DashboardResponse();
         response.setRevenue(buildRevenueStats(visits));
@@ -75,7 +76,8 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         User owner = currentUserService.getCurrentUser();
-        Client client = clientRepository.findByIdAndOwner(clientId, owner)
+        Branch branch = currentUserService.getCurrentBranch();
+        Client client = clientRepository.findByIdAndBarbershop(clientId, owner.getBarbershop())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Client not found"));
 
         LocalDate startDate = month.atDay(1);
@@ -83,9 +85,9 @@ public class DashboardServiceImpl implements DashboardService {
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.plusDays(1).atStartOfDay().minusNanos(1);
 
-        List<Shift> shifts = shiftRepository.findByClientIdAndDatetimeBetweenAndOwner(clientId, start, end, owner);
-        List<Visit> selectedMonthVisits = visitRepository.findByShiftClientIdAndShiftDatetimeBetweenAndShiftOwner(clientId, start, end, owner);
-        List<Visit> historicalVisits = visitRepository.findByShiftClientIdAndShiftOwner(clientId, owner);
+        List<Shift> shifts = shiftRepository.findByClientIdAndDatetimeBetweenAndBranch(clientId, start, end, branch);
+        List<Visit> selectedMonthVisits = visitRepository.findByShiftClientIdAndShiftDatetimeBetweenAndShiftBranch(clientId, start, end, branch);
+        List<Visit> historicalVisits = visitRepository.findByShiftClientIdAndShiftBranch(clientId, branch);
 
         ClientDashboardResponse response = new ClientDashboardResponse();
         response.setClient(buildClientStats(client));

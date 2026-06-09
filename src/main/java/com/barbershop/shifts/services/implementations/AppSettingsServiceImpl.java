@@ -3,6 +3,7 @@ package com.barbershop.shifts.services.implementations;
 import com.barbershop.shifts.dtos.settings.AppSettingsRequest;
 import com.barbershop.shifts.dtos.settings.AppSettingsResponse;
 import com.barbershop.shifts.entities.AppSettings;
+import com.barbershop.shifts.entities.Branch;
 import com.barbershop.shifts.entities.User;
 import com.barbershop.shifts.repositories.AppSettingsRepositoryJpa;
 import com.barbershop.shifts.services.AppSettingsService;
@@ -39,12 +40,19 @@ public class AppSettingsServiceImpl implements AppSettingsService {
 
     private AppSettings getOrCreateSettings() {
         User owner = currentUserService.getCurrentUser();
+        Branch branch = currentUserService.getCurrentBranch();
 
-        AppSettings settings = appSettingsRepository.findByOwner(owner).orElseGet(() -> {
+        AppSettings settings = appSettingsRepository.findFirstByBranchOrderByIdAsc(branch)
+                .or(() -> appSettingsRepository.findFirstByOwnerOrderByIdAsc(owner).map(existing -> {
+                    existing.setBranch(branch);
+                    return appSettingsRepository.save(existing);
+                }))
+                .orElseGet(() -> {
             AppSettings created = new AppSettings();
             created.setDefaultEstimatedAmount(BigDecimal.ZERO);
             created.setDefaultScheduleSlots(FALLBACK_DEFAULT_SLOTS);
             created.setOwner(owner);
+            created.setBranch(branch);
             return appSettingsRepository.save(created);
         });
 

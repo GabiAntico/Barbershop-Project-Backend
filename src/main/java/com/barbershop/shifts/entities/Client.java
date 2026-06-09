@@ -36,4 +36,8 @@ public class Client {
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private User owner;
+
+    @ManyToOne
+    @JoinColumn(name = "barbershop_id")
+    private Barbershop barbershop;
 }

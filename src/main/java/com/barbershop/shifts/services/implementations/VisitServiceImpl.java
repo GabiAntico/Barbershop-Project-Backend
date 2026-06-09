@@ -1,10 +1,12 @@
 package com.barbershop.shifts.services.implementations;
 
+import com.barbershop.shifts.dtos.clients.ClientResponse;
 import com.barbershop.shifts.dtos.visits.CreationVisitRequest;
 import com.barbershop.shifts.dtos.visits.UpdateVisitRequest;
 import com.barbershop.shifts.dtos.visits.VisitResponse;
 import com.barbershop.shifts.entities.PaymentMethod;
 import com.barbershop.shifts.entities.PaymentStatus;
+import com.barbershop.shifts.entities.Branch;
 import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.entities.ShiftStatus;
 import com.barbershop.shifts.entities.User;
@@ -37,8 +39,8 @@ public class VisitServiceImpl implements VisitService {
 
     @Override
     public List<VisitResponse> getAllVisits() {
-        User owner = currentUserService.getCurrentUser();
-        List<Visit> visits = visitRepository.findAllByShiftOwner(owner);
+        Branch branch = currentUserService.getCurrentBranch();
+        List<Visit> visits = visitRepository.findAllByShiftBranch(branch);
 
         List<VisitResponse> visitResponses = new ArrayList<>();
         for(Visit visit : visits){
@@ -61,9 +63,9 @@ public class VisitServiceImpl implements VisitService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid parameter");
         }
 
-        User owner = currentUserService.getCurrentUser();
+        Branch branch = currentUserService.getCurrentBranch();
 
-        return visitRepository.findByIdAndShiftOwner(id, owner).orElseThrow(() ->
+        return visitRepository.findByIdAndShiftBranch(id, branch).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Entity not found"));
     }
 
@@ -73,6 +75,7 @@ public class VisitServiceImpl implements VisitService {
 
 
         Shift shift = shiftService.getShiftByIdRaw(visitRequest.getShiftId());
+        User attendedBy = currentUserService.getCurrentUser();
 
         if(shift.getVisit() != null){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This shift already has a visit associated");
@@ -96,6 +99,7 @@ public class VisitServiceImpl implements VisitService {
         Visit visitNew = new Visit();
 
         visitNew.setShift(shift);
+        visitNew.setAttendedBy(attendedBy);
         visitNew.setCurrency(visitRequest.getCurrency());
         visitNew.setPaymentStatus(visitRequest.getPaymentStatus());
         visitNew.setPaymentMethod(visitRequest.getPaymentMethod());
@@ -129,11 +133,33 @@ public class VisitServiceImpl implements VisitService {
         visitResponse.setCurrency(visit.getCurrency());
         visitResponse.setPaidAt(visit.getPaidAt());
         visitResponse.setShiftId(visit.getShift().getId());
+        visitResponse.setClient(convertClientIntoDto(visit.getShift().getClient()));
+        User attendedBy = visit.getAttendedBy() != null
+                ? visit.getAttendedBy()
+                : visit.getShift().getOwner();
+
+        if (attendedBy != null) {
+            visitResponse.setAttendedByUserId(attendedBy.getId());
+            visitResponse.setAttendedByName(attendedBy.getDisplayName());
+            visitResponse.setAttendedByEmail(attendedBy.getEmail());
+        }
         visitResponse.setPaymentStatus(visit.getPaymentStatus());
         visitResponse.setPaymentMethod(visit.getPaymentMethod());
         visitResponse.setTotalAmount(visit.getTotalAmount());
 
         return visitResponse;
+    }
+
+    private ClientResponse convertClientIntoDto(com.barbershop.shifts.entities.Client client) {
+        ClientResponse clientResponse = new ClientResponse();
+        clientResponse.setId(client.getId());
+        clientResponse.setEmail(client.getEmail());
+        clientResponse.setPhoneNumber(client.getPhoneNumber());
+        clientResponse.setFirstName(client.getFirstName());
+        clientResponse.setLastName(client.getLastName());
+        clientResponse.setDocumentNumber(client.getDocumentNumber());
+        clientResponse.setNotes(client.getNotes());
+        return clientResponse;
     }
 
     private void validatePaidAmount(CreationVisitRequest request) {

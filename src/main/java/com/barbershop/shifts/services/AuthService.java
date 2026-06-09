@@ -6,4 +6,5 @@ import org.springframework.stereotype.Service;
 @Service
 public interface AuthService {
     void register(RegisterRequest request);
+    void changePassword(String currentPassword, String newPassword);
 }
