@@ -31,7 +31,7 @@ public class ClientServiceImpl implements ClientService {
         User owner = currentUserService.getCurrentUser();
         Client client = new Client();
         client.setEmail(normalize(clientRequest.getEmail()));
-        client.setPhoneNumber(normalize(clientRequest.getPhoneNumber()));
+        client.setPhoneNumber(normalizePhoneNumber(clientRequest.getPhoneNumber()));
         client.setFirstName(normalize(clientRequest.getFirstName()));
         client.setLastName(normalize(clientRequest.getLastName()));
         client.setDocumentNumber(normalize(clientRequest.getDocumentNumber()));
@@ -39,8 +39,8 @@ public class ClientServiceImpl implements ClientService {
         client.setOwner(owner);
         client.setBarbershop(owner.getBarbershop());
 
-        if(client.getEmail() != null && clientRepository.existsByEmailAndBarbershop(client.getEmail(), owner.getBarbershop())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
+        if(client.getPhoneNumber() != null && clientRepository.existsByPhoneNumberAndBarbershop(client.getPhoneNumber(), owner.getBarbershop())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Phone number already exists");
         }
 
         Client clientSaved = clientRepository.save(client);
@@ -61,7 +61,7 @@ public class ClientServiceImpl implements ClientService {
         Client client = new Client();
         client.setId(newClient.getId());
         client.setEmail(normalize(newClient.getEmail()));
-        client.setPhoneNumber(normalize(newClient.getPhoneNumber()));
+        client.setPhoneNumber(normalizePhoneNumber(newClient.getPhoneNumber()));
         client.setFirstName(normalize(newClient.getFirstName()));
         client.setLastName(normalize(newClient.getLastName()));
         client.setDocumentNumber(normalize(newClient.getDocumentNumber()));
@@ -69,8 +69,8 @@ public class ClientServiceImpl implements ClientService {
         client.setOwner(actualClient.getOwner());
         client.setBarbershop(owner.getBarbershop());
 
-        if(client.getEmail() != null && clientRepository.existsByEmailAndIdNotAndBarbershop(client.getEmail(), client.getId(), owner.getBarbershop())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
+        if(client.getPhoneNumber() != null && clientRepository.existsByPhoneNumberAndIdNotAndBarbershop(client.getPhoneNumber(), client.getId(), owner.getBarbershop())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Phone number already exists");
         }
 
         if(areEquals(actualClient, client)){
@@ -157,5 +157,15 @@ public class ClientServiceImpl implements ClientService {
 
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizePhoneNumber(String value) {
+        String normalized = normalize(value);
+
+        if (normalized == null || !normalized.matches("\\d{8,15}")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid phone number");
+        }
+
+        return normalized;
     }
 }

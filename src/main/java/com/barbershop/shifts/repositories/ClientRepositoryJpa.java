@@ -13,10 +13,8 @@ import java.util.Optional;
 public interface ClientRepositoryJpa extends JpaRepository<Client, Long> {
     List<Client> findAllByOwner(User owner);
     Optional<Client> findByIdAndOwner(Long id, User owner);
-    boolean existsByEmailAndOwner(String email, User owner);
-    boolean existsByEmailAndIdNotAndOwner(String email, Long id, User owner);
     List<Client> findAllByBarbershop(Barbershop barbershop);
     Optional<Client> findByIdAndBarbershop(Long id, Barbershop barbershop);
-    boolean existsByEmailAndBarbershop(String email, Barbershop barbershop);
-    boolean existsByEmailAndIdNotAndBarbershop(String email, Long id, Barbershop barbershop);
+    boolean existsByPhoneNumberAndBarbershop(String phoneNumber, Barbershop barbershop);
+    boolean existsByPhoneNumberAndIdNotAndBarbershop(String phoneNumber, Long id, Barbershop barbershop);
 }
