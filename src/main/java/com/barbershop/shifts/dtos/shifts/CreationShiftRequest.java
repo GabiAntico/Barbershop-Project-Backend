@@ -16,5 +16,7 @@ public class CreationShiftRequest {
     @NotNull
     private Long clientId;
 
+    private Long assignedEmployeeId;
+
     private BigDecimal estimatedAmount;
 }

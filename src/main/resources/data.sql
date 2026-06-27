@@ -66,56 +66,85 @@ JOIN barbershops b ON b.id = u.barbershop_id
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM clients c WHERE c.phone_number = '3512228888' AND c.barbershop_id = b.id);
 
-INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id)
-SELECT '2026-05-20 10:00:00', c.id, 'PENDING', 12500.00, u.id, br.id
+UPDATE clients
+SET self_responsible = TRUE
+WHERE self_responsible IS NULL
+  AND barbershop_id = (SELECT id FROM barbershops WHERE name = 'Barberia Demo');
+
+INSERT INTO responsible_contacts (full_name, phone_number, email, barbershop_id)
+SELECT NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), ''), c.phone_number, c.email, c.barbershop_id
+FROM clients c
+JOIN barbershops b ON b.id = c.barbershop_id
+WHERE b.name = 'Barberia Demo'
+  AND c.phone_number IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM responsible_contacts rc
+      WHERE rc.phone_number = c.phone_number
+        AND rc.barbershop_id = c.barbershop_id
+  );
+
+UPDATE clients
+SET responsible_contact_id = (
+    SELECT MIN(rc.id)
+    FROM responsible_contacts rc
+    WHERE rc.phone_number = clients.phone_number
+      AND rc.barbershop_id = clients.barbershop_id
+)
+WHERE responsible_contact_id IS NULL
+  AND phone_number IS NOT NULL
+  AND barbershop_id = (SELECT id FROM barbershops WHERE name = 'Barberia Demo');
+
+INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id, assigned_employee_id)
+SELECT '2026-05-20 10:00:00', c.id, 'PENDING', 12500.00, u.id, br.id, u.id
 FROM users u
 JOIN branches br ON br.name = 'Sucursal Centro' AND br.barbershop_id = u.barbershop_id
 JOIN clients c ON c.phone_number = '3513727258' AND c.barbershop_id = u.barbershop_id
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM shifts s WHERE s.datetime = '2026-05-20 10:00:00' AND s.branch_id = br.id);
 
-INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id)
-SELECT '2026-05-20 11:30:00', c.id, 'PENDING', 12500.00, u.id, br.id
+INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id, assigned_employee_id)
+SELECT '2026-05-20 11:30:00', c.id, 'PENDING', 12500.00, u.id, br.id, u.id
 FROM users u
 JOIN branches br ON br.name = 'Sucursal Centro' AND br.barbershop_id = u.barbershop_id
 JOIN clients c ON c.phone_number = '3513339999' AND c.barbershop_id = u.barbershop_id
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM shifts s WHERE s.datetime = '2026-05-20 11:30:00' AND s.branch_id = br.id);
 
-INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id)
-SELECT '2026-05-19 18:30:00', c.id, 'COMPLETED', 12500.00, u.id, br.id
+INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id, assigned_employee_id)
+SELECT '2026-05-19 18:30:00', c.id, 'COMPLETED', 12500.00, u.id, br.id, u.id
 FROM users u
 JOIN branches br ON br.name = 'Sucursal Centro' AND br.barbershop_id = u.barbershop_id
 JOIN clients c ON c.phone_number = '3513727258' AND c.barbershop_id = u.barbershop_id
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM shifts s WHERE s.datetime = '2026-05-19 18:30:00' AND s.branch_id = br.id);
 
-INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id)
-SELECT '2026-05-19 19:00:00', c.id, 'CANCELLED', 12500.00, u.id, br.id
+INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id, assigned_employee_id)
+SELECT '2026-05-19 19:00:00', c.id, 'CANCELLED', 12500.00, u.id, br.id, u.id
 FROM users u
 JOIN branches br ON br.name = 'Sucursal Centro' AND br.barbershop_id = u.barbershop_id
 JOIN clients c ON c.phone_number = '3513339999' AND c.barbershop_id = u.barbershop_id
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM shifts s WHERE s.datetime = '2026-05-19 19:00:00' AND s.branch_id = br.id);
 
-INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id)
-SELECT '2026-05-18 16:30:00', c.id, 'COMPLETED', 15000.00, u.id, br.id
+INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id, assigned_employee_id)
+SELECT '2026-05-18 16:30:00', c.id, 'COMPLETED', 15000.00, u.id, br.id, u.id
 FROM users u
 JOIN branches br ON br.name = 'Sucursal Centro' AND br.barbershop_id = u.barbershop_id
 JOIN clients c ON c.phone_number = '3511117777' AND c.barbershop_id = u.barbershop_id
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM shifts s WHERE s.datetime = '2026-05-18 16:30:00' AND s.branch_id = br.id);
 
-INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id)
-SELECT '2026-05-17 17:00:00', c.id, 'CANCELLED', 12500.00, u.id, br.id
+INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id, assigned_employee_id)
+SELECT '2026-05-17 17:00:00', c.id, 'CANCELLED', 12500.00, u.id, br.id, u.id
 FROM users u
 JOIN branches br ON br.name = 'Sucursal Centro' AND br.barbershop_id = u.barbershop_id
 JOIN clients c ON c.phone_number = '3512228888' AND c.barbershop_id = u.barbershop_id
 WHERE u.email = 'admin@barbershop.com'
   AND NOT EXISTS (SELECT 1 FROM shifts s WHERE s.datetime = '2026-05-17 17:00:00' AND s.branch_id = br.id);
 
-INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id)
-SELECT '2026-04-25 12:30:00', c.id, 'COMPLETED', 14000.00, u.id, br.id
+INSERT INTO shifts (datetime, client_id, status, estimated_amount, owner_id, branch_id, assigned_employee_id)
+SELECT '2026-04-25 12:30:00', c.id, 'COMPLETED', 14000.00, u.id, br.id, u.id
 FROM users u
 JOIN branches br ON br.name = 'Sucursal Centro' AND br.barbershop_id = u.barbershop_id
 JOIN clients c ON c.phone_number = '3512228888' AND c.barbershop_id = u.barbershop_id
@@ -155,4 +184,20 @@ WHERE attended_by_user_id IS NULL
       JOIN branches br ON br.id = s.branch_id
       JOIN barbershops b ON b.id = br.barbershop_id
       WHERE b.name = 'Barberia Demo'
+  );
+
+INSERT INTO visit_payment_movements (visit_id, type, amount, occurred_at, payment_method, notes)
+SELECT v.id, 'PAYMENT', v.total_amount, v.paid_at, v.payment_method, 'Pago demo'
+FROM visits v
+JOIN shifts s ON s.id = v.shift_id
+JOIN branches br ON br.id = s.branch_id
+JOIN barbershops b ON b.id = br.barbershop_id
+WHERE b.name = 'Barberia Demo'
+  AND v.payment_status = 'PAID'
+  AND v.paid_at IS NOT NULL
+  AND NOT EXISTS (
+      SELECT 1
+      FROM visit_payment_movements m
+      WHERE m.visit_id = v.id
+        AND m.type = 'PAYMENT'
   );

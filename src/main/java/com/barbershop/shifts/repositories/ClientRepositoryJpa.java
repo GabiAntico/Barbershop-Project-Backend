@@ -15,6 +15,6 @@ public interface ClientRepositoryJpa extends JpaRepository<Client, Long> {
     Optional<Client> findByIdAndOwner(Long id, User owner);
     List<Client> findAllByBarbershop(Barbershop barbershop);
     Optional<Client> findByIdAndBarbershop(Long id, Barbershop barbershop);
-    boolean existsByPhoneNumberAndBarbershop(String phoneNumber, Barbershop barbershop);
-    boolean existsByPhoneNumberAndIdNotAndBarbershop(String phoneNumber, Long id, Barbershop barbershop);
+    boolean existsByPhoneNumberAndFirstNameAndLastNameAndBarbershop(String phoneNumber, String firstName, String lastName, Barbershop barbershop);
+    boolean existsByPhoneNumberAndFirstNameAndLastNameAndIdNotAndBarbershop(String phoneNumber, String firstName, String lastName, Long id, Barbershop barbershop);
 }

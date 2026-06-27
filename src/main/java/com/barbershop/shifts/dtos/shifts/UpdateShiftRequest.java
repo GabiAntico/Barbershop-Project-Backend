@@ -21,6 +21,8 @@ public class UpdateShiftRequest {
     @NotNull
     private Long clientId;
 
+    private Long assignedEmployeeId;
+
     @NotNull
     private ShiftStatus status;
 

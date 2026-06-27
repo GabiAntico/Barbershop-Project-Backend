@@ -4,8 +4,10 @@ import com.barbershop.shifts.dtos.clients.ClientRequest;
 import com.barbershop.shifts.dtos.clients.ClientResponse;
 import com.barbershop.shifts.dtos.clients.CreationClientRequest;
 import com.barbershop.shifts.entities.Client;
+import com.barbershop.shifts.entities.ResponsibleContact;
 import com.barbershop.shifts.entities.User;
 import com.barbershop.shifts.repositories.ClientRepositoryJpa;
+import com.barbershop.shifts.repositories.ResponsibleContactRepositoryJpa;
 import com.barbershop.shifts.services.ClientService;
 import com.barbershop.shifts.services.CurrentUserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,9 @@ public class ClientServiceImpl implements ClientService {
     private ClientRepositoryJpa clientRepository;
 
     @Autowired
+    private ResponsibleContactRepositoryJpa responsibleContactRepository;
+
+    @Autowired
     private CurrentUserService currentUserService;
 
     @Override
@@ -36,11 +41,33 @@ public class ClientServiceImpl implements ClientService {
         client.setLastName(normalize(clientRequest.getLastName()));
         client.setDocumentNumber(normalize(clientRequest.getDocumentNumber()));
         client.setNotes(normalize(clientRequest.getNotes()));
+        client.setSelfResponsible(isSelfResponsible(clientRequest.getSelfResponsible()));
         client.setOwner(owner);
         client.setBarbershop(owner.getBarbershop());
 
-        if(client.getPhoneNumber() != null && clientRepository.existsByPhoneNumberAndBarbershop(client.getPhoneNumber(), owner.getBarbershop())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Phone number already exists");
+        String responsibleContactName = resolveResponsibleContactName(
+                client.getSelfResponsible(),
+                client.getFirstName(),
+                client.getLastName(),
+                clientRequest.getResponsibleContactName()
+        );
+
+        validateResponsibleRules(client.getSelfResponsible(), client.getFirstName(), responsibleContactName);
+
+        client.setResponsibleContact(resolveResponsibleContact(
+                client.getPhoneNumber(),
+                client.getEmail(),
+                responsibleContactName,
+                owner
+        ));
+
+        if(clientRepository.existsByPhoneNumberAndFirstNameAndLastNameAndBarbershop(
+                client.getPhoneNumber(),
+                client.getFirstName(),
+                client.getLastName(),
+                owner.getBarbershop()
+        )) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Client already exists");
         }
 
         Client clientSaved = clientRepository.save(client);
@@ -66,16 +93,38 @@ public class ClientServiceImpl implements ClientService {
         client.setLastName(normalize(newClient.getLastName()));
         client.setDocumentNumber(normalize(newClient.getDocumentNumber()));
         client.setNotes(normalize(newClient.getNotes()));
+        client.setSelfResponsible(isSelfResponsible(newClient.getSelfResponsible()));
         client.setOwner(actualClient.getOwner());
         client.setBarbershop(owner.getBarbershop());
+        String responsibleContactName = resolveResponsibleContactName(
+                client.getSelfResponsible(),
+                client.getFirstName(),
+                client.getLastName(),
+                newClient.getResponsibleContactName()
+        );
 
-        if(client.getPhoneNumber() != null && clientRepository.existsByPhoneNumberAndIdNotAndBarbershop(client.getPhoneNumber(), client.getId(), owner.getBarbershop())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Phone number already exists");
+        validateResponsibleRules(client.getSelfResponsible(), client.getFirstName(), responsibleContactName);
+
+        if(clientRepository.existsByPhoneNumberAndFirstNameAndLastNameAndIdNotAndBarbershop(
+                client.getPhoneNumber(),
+                client.getFirstName(),
+                client.getLastName(),
+                client.getId(),
+                owner.getBarbershop()
+        )) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Client already exists");
         }
 
-        if(areEquals(actualClient, client)){
+        if(areEquals(actualClient, client, responsibleContactName)){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new information is the same as the previous one");
         }
+
+        client.setResponsibleContact(resolveResponsibleContact(
+                client.getPhoneNumber(),
+                client.getEmail(),
+                responsibleContactName,
+                owner
+        ));
 
         Client clientSaved = clientRepository.save(client);
 
@@ -134,6 +183,10 @@ public class ClientServiceImpl implements ClientService {
         clientResponse.setId(client.getId());
         clientResponse.setEmail(client.getEmail());
         clientResponse.setPhoneNumber(client.getPhoneNumber());
+        clientResponse.setSelfResponsible(!Boolean.FALSE.equals(client.getSelfResponsible()));
+        clientResponse.setResponsibleContactName(
+                client.getResponsibleContact() == null ? null : client.getResponsibleContact().getFullName()
+        );
         clientResponse.setFirstName(client.getFirstName());
         clientResponse.setLastName(client.getLastName());
         clientResponse.setDocumentNumber(client.getDocumentNumber());
@@ -142,14 +195,19 @@ public class ClientServiceImpl implements ClientService {
         return clientResponse;
     }
 
-    private boolean areEquals(Client instance1, Client instance2){
+    private boolean areEquals(Client instance1, Client instance2, String responsibleContactName){
         return Objects.equals(instance1.getId(), instance2.getId()) &&
                 Objects.equals(instance1.getEmail(), instance2.getEmail()) &&
                 Objects.equals(instance1.getPhoneNumber(), instance2.getPhoneNumber()) &&
                 Objects.equals(instance1.getFirstName(), instance2.getFirstName()) &&
                 Objects.equals(instance1.getLastName(), instance2.getLastName()) &&
                 Objects.equals(instance1.getDocumentNumber(), instance2.getDocumentNumber()) &&
-                Objects.equals(instance1.getNotes(), instance2.getNotes());
+                Objects.equals(instance1.getNotes(), instance2.getNotes()) &&
+                Objects.equals(!Boolean.FALSE.equals(instance1.getSelfResponsible()), !Boolean.FALSE.equals(instance2.getSelfResponsible())) &&
+                Objects.equals(
+                        instance1.getResponsibleContact() == null ? null : instance1.getResponsibleContact().getFullName(),
+                        responsibleContactName
+                );
     }
 
     private String normalize(String value) {
@@ -168,4 +226,58 @@ public class ClientServiceImpl implements ClientService {
 
         return normalized;
     }
+
+    private boolean isSelfResponsible(Boolean value) {
+        return value == null || value;
+    }
+
+    private String resolveResponsibleContactName(
+            Boolean selfResponsible,
+            String firstName,
+            String lastName,
+            String requestResponsibleContactName
+    ) {
+        if (Boolean.FALSE.equals(selfResponsible)) {
+            return normalize(requestResponsibleContactName);
+        }
+
+        return buildFullName(firstName, lastName);
+    }
+
+    private void validateResponsibleRules(Boolean selfResponsible, String firstName, String responsibleContactName) {
+        if (!Boolean.FALSE.equals(selfResponsible)) {
+            return;
+        }
+
+        if (firstName == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Client first name is required");
+        }
+
+        if (responsibleContactName == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Responsible contact name is required");
+        }
+    }
+
+    private ResponsibleContact resolveResponsibleContact(String phoneNumber, String email, String fullName, User owner) {
+        ResponsibleContact contact = responsibleContactRepository
+                .findFirstByPhoneNumberAndBarbershop(phoneNumber, owner.getBarbershop())
+                .orElseGet(ResponsibleContact::new);
+
+        contact.setPhoneNumber(phoneNumber);
+        contact.setEmail(email);
+        contact.setFullName(fullName);
+        contact.setBarbershop(owner.getBarbershop());
+
+        return responsibleContactRepository.save(contact);
+    }
+
+    private String buildFullName(String firstName, String lastName) {
+        String fullName = String.join(" ",
+                firstName == null ? "" : firstName,
+                lastName == null ? "" : lastName
+        ).trim();
+
+        return fullName.isEmpty() ? null : fullName;
+    }
+
 }

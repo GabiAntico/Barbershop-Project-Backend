@@ -4,21 +4,33 @@ import com.barbershop.shifts.dtos.context.BranchResponse;
 import com.barbershop.shifts.dtos.context.CreateBranchRequest;
 import com.barbershop.shifts.dtos.context.CreateEmployeeRequest;
 import com.barbershop.shifts.dtos.context.EmployeeResponse;
+import com.barbershop.shifts.dtos.context.EmployeeScheduleDayRequest;
+import com.barbershop.shifts.dtos.context.EmployeeScheduleDayResponse;
+import com.barbershop.shifts.dtos.context.EmployeeScheduleRequest;
+import com.barbershop.shifts.dtos.context.EmployeeScheduleResponse;
 import com.barbershop.shifts.dtos.context.UpdateEmployeeBranchesRequest;
 import com.barbershop.shifts.dtos.context.WorkContextResponse;
 import com.barbershop.shifts.entities.Barbershop;
 import com.barbershop.shifts.entities.Branch;
+import com.barbershop.shifts.entities.EmployeeSchedule;
 import com.barbershop.shifts.entities.User;
 import com.barbershop.shifts.repositories.BranchRepositoryJpa;
+import com.barbershop.shifts.repositories.EmployeeScheduleRepository;
 import com.barbershop.shifts.repositories.UserRepository;
 import com.barbershop.shifts.services.CurrentUserService;
+import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/work-context")
@@ -27,17 +39,20 @@ public class WorkContextController {
     private final CurrentUserService currentUserService;
     private final BranchRepositoryJpa branchRepository;
     private final UserRepository userRepository;
+    private final EmployeeScheduleRepository employeeScheduleRepository;
     private final PasswordEncoder passwordEncoder;
 
     public WorkContextController(
             CurrentUserService currentUserService,
             BranchRepositoryJpa branchRepository,
             UserRepository userRepository,
+            EmployeeScheduleRepository employeeScheduleRepository,
             PasswordEncoder passwordEncoder
     ) {
         this.currentUserService = currentUserService;
         this.branchRepository = branchRepository;
         this.userRepository = userRepository;
+        this.employeeScheduleRepository = employeeScheduleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -77,7 +92,7 @@ public class WorkContextController {
 
     @GetMapping("/employees")
     public List<EmployeeResponse> getEmployees() {
-        User user = requireAdmin();
+        User user = currentUserService.getCurrentUser();
         return userRepository.findAllByBarbershop(user.getBarbershop()).stream()
                 .map(this::toEmployeeResponse)
                 .toList();
@@ -115,6 +130,51 @@ public class WorkContextController {
         return toEmployeeResponse(userRepository.save(employee));
     }
 
+    @GetMapping("/employees/{id}/schedule")
+    public EmployeeScheduleResponse getEmployeeSchedule(
+            @PathVariable Long id,
+            @RequestParam Long branchId
+    ) {
+        User admin = requireAdmin();
+        User employee = getEmployee(admin.getBarbershop(), id);
+        Branch branch = getBranch(admin.getBarbershop(), branchId);
+        validateEmployeeBranch(employee, branch);
+
+        return toScheduleResponse(employee, branch);
+    }
+
+    @PutMapping("/employees/{id}/schedule")
+    @Transactional
+    public EmployeeScheduleResponse updateEmployeeSchedule(
+            @PathVariable Long id,
+            @RequestBody EmployeeScheduleRequest request
+    ) {
+        User admin = requireAdmin();
+        User employee = getEmployee(admin.getBarbershop(), id);
+        Branch branch = getBranch(admin.getBarbershop(), request.getBranchId());
+        validateEmployeeBranch(employee, branch);
+        validateScheduleRequest(request);
+
+        employeeScheduleRepository.deleteAllByEmployeeAndBranch(employee, branch);
+
+        List<EmployeeSchedule> schedules = request.getDays().stream()
+                .filter(day -> Boolean.TRUE.equals(day.getEnabled()))
+                .map(day -> {
+                    EmployeeSchedule schedule = new EmployeeSchedule();
+                    schedule.setEmployee(employee);
+                    schedule.setBranch(branch);
+                    schedule.setDayOfWeek(day.getDayOfWeek());
+                    schedule.setStartTime(day.getStartTime());
+                    schedule.setEndTime(day.getEndTime());
+                    return schedule;
+                })
+                .toList();
+
+        employeeScheduleRepository.saveAll(schedules);
+
+        return toScheduleResponse(employee, branch);
+    }
+
     private List<Branch> getAvailableBranches(User user) {
         if (currentUserService.isAdmin(user)) {
             return branchRepository.findAllByBarbershop(user.getBarbershop());
@@ -131,6 +191,45 @@ public class WorkContextController {
                 .map(id -> branchRepository.findByIdAndBarbershop(id, barbershop)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid branch")))
                 .toList();
+    }
+
+    private User getEmployee(Barbershop barbershop, Long id) {
+        return userRepository.findByIdAndBarbershop(id, barbershop)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
+    }
+
+    private Branch getBranch(Barbershop barbershop, Long id) {
+        return branchRepository.findByIdAndBarbershop(id, barbershop)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid branch"));
+    }
+
+    private void validateEmployeeBranch(User employee, Branch branch) {
+        boolean assigned = employee.getBranches().stream().anyMatch(item -> item.getId().equals(branch.getId()));
+        if (!assigned) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Employee is not assigned to this branch");
+        }
+    }
+
+    private void validateScheduleRequest(EmployeeScheduleRequest request) {
+        if (request.getDays() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Schedule days are required");
+        }
+
+        boolean hasEnabledDay = false;
+        for (EmployeeScheduleDayRequest day : request.getDays()) {
+            if (!Boolean.TRUE.equals(day.getEnabled())) continue;
+            hasEnabledDay = true;
+            if (day.getDayOfWeek() == null || day.getStartTime() == null || day.getEndTime() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Enabled days require start and end time");
+            }
+            if (!day.getEndTime().isAfter(day.getStartTime())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "End time must be after start time");
+            }
+        }
+
+        if (!hasEnabledDay) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one working day is required");
+        }
     }
 
     private User requireAdmin() {
@@ -157,6 +256,31 @@ public class WorkContextController {
         response.setRole(user.getRole());
         response.setTemporaryPassword(Boolean.TRUE.equals(user.getTemporaryPassword()));
         response.setBranches(user.getBranches().stream().map(this::toBranchResponse).toList());
+        return response;
+    }
+
+    private EmployeeScheduleResponse toScheduleResponse(User employee, Branch branch) {
+        List<EmployeeSchedule> schedules = employeeScheduleRepository
+                .findAllByEmployeeAndBranchOrderByDayOfWeekAscStartTimeAsc(employee, branch);
+        boolean hasCustomSchedule = !schedules.isEmpty();
+        Map<DayOfWeek, EmployeeSchedule> schedulesByDay = schedules.stream()
+                .collect(Collectors.toMap(EmployeeSchedule::getDayOfWeek, Function.identity(), (first, second) -> first));
+
+        EmployeeScheduleResponse response = new EmployeeScheduleResponse();
+        response.setEmployeeId(employee.getId());
+        response.setBranchId(branch.getId());
+        response.setDays(List.of(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
+                .stream()
+                .map(day -> {
+                    EmployeeSchedule schedule = schedulesByDay.get(day);
+                    EmployeeScheduleDayResponse dayResponse = new EmployeeScheduleDayResponse();
+                    dayResponse.setDayOfWeek(day);
+                    dayResponse.setEnabled(hasCustomSchedule ? schedule != null : true);
+                    dayResponse.setStartTime(schedule == null ? LocalTime.of(10, 0) : schedule.getStartTime());
+                    dayResponse.setEndTime(schedule == null ? LocalTime.of(20, 0) : schedule.getEndTime());
+                    return dayResponse;
+                })
+                .toList());
         return response;
     }
 

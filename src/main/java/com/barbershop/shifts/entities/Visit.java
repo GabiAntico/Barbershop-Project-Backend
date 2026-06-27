@@ -3,10 +3,14 @@ package com.barbershop.shifts.entities;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "visits")
@@ -43,4 +47,10 @@ public class Visit {
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")
     private PaymentMethod paymentMethod;
+
+    @OneToMany(mappedBy = "visit", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("occurredAt ASC, id ASC")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    private List<VisitPaymentMovement> paymentMovements = new ArrayList<>();
 }

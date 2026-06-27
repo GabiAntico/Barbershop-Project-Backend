@@ -23,6 +23,9 @@ public class AppSettings {
     @Column(name = "default_estimated_amount", precision = 10, scale = 2)
     private BigDecimal defaultEstimatedAmount;
 
+    @Column(name = "default_currency", length = 3)
+    private String defaultCurrency;
+
     @Column(name = "default_schedule_slots", length = 1000)
     private String defaultScheduleSlots;
 

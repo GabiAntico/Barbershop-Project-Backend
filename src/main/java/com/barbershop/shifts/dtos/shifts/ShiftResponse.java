@@ -11,6 +11,8 @@ public class ShiftResponse {
     private Long id;
     private LocalDateTime datetime;
     private Long clientId;
+    private Long assignedEmployeeId;
+    private ShiftEmployeeResponse assignedEmployee;
     private ShiftStatus status;
     private BigDecimal estimatedAmount;
 }

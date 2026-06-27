@@ -7,4 +7,5 @@ import java.math.BigDecimal;
 @Data
 public class AppSettingsResponse {
     private BigDecimal defaultEstimatedAmount;
+    private String defaultCurrency;
 }
