@@ -42,4 +42,8 @@ public class Shift {
     @ManyToOne
     @JoinColumn(name = "branch_id")
     private Branch branch;
+
+    @ManyToOne
+    @JoinColumn(name = "assigned_employee_id")
+    private User assignedEmployee;
 }

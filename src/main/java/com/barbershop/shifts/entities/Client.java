@@ -33,6 +33,13 @@ public class Client {
     @Column(name = "notes", length = 1000)
     private String notes;
 
+    @Column(name = "self_responsible")
+    private Boolean selfResponsible = true;
+
+    @ManyToOne
+    @JoinColumn(name = "responsible_contact_id")
+    private ResponsibleContact responsibleContact;
+
     @ManyToOne
     @JoinColumn(name = "owner_id")
     private User owner;

@@ -4,11 +4,12 @@ import com.barbershop.shifts.dtos.dashboard.ClientDashboardResponse;
 import com.barbershop.shifts.dtos.dashboard.DashboardResponse;
 import com.barbershop.shifts.entities.Branch;
 import com.barbershop.shifts.entities.Client;
-import com.barbershop.shifts.entities.PaymentStatus;
 import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.entities.ShiftStatus;
 import com.barbershop.shifts.entities.User;
 import com.barbershop.shifts.entities.Visit;
+import com.barbershop.shifts.entities.VisitPaymentMovement;
+import com.barbershop.shifts.entities.VisitPaymentMovementType;
 import com.barbershop.shifts.repositories.ClientRepositoryJpa;
 import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
 import com.barbershop.shifts.repositories.VisitRepositoryJpa;
@@ -16,6 +17,7 @@ import com.barbershop.shifts.services.CurrentUserService;
 import com.barbershop.shifts.services.DashboardService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
@@ -28,6 +30,7 @@ import java.util.Comparator;
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 public class DashboardServiceImpl implements DashboardService {
 
     private final ShiftRepositoryJpa shiftRepository;
@@ -100,15 +103,15 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     private DashboardResponse.RevenueStats buildRevenueStats(List<Visit> visits) {
-        List<Visit> paidVisits = visits.stream()
-                .filter(visit -> visit.getPaymentStatus() == PaymentStatus.PAID)
+        List<Visit> visitsWithRevenue = visits.stream()
+                .filter(visit -> getNetPaidAmount(visit).compareTo(BigDecimal.ZERO) > 0)
                 .toList();
 
-        BigDecimal total = paidVisits.stream()
-                .map(Visit::getTotalAmount)
+        BigDecimal total = visitsWithRevenue.stream()
+                .map(this::getNetPaidAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        long count = paidVisits.size();
+        long count = visitsWithRevenue.size();
         BigDecimal averageTicket = count == 0
                 ? BigDecimal.ZERO
                 : total.divide(BigDecimal.valueOf(count), 2, RoundingMode.HALF_UP);
@@ -119,6 +122,21 @@ public class DashboardServiceImpl implements DashboardService {
         stats.setAverageTicket(averageTicket);
 
         return stats;
+    }
+
+    private BigDecimal getNetPaidAmount(Visit visit) {
+        BigDecimal grossPaid = sumMovements(visit, VisitPaymentMovementType.PAYMENT);
+        BigDecimal refunded = sumMovements(visit, VisitPaymentMovementType.REFUND);
+        BigDecimal netPaid = grossPaid.subtract(refunded);
+
+        return netPaid.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : netPaid;
+    }
+
+    private BigDecimal sumMovements(Visit visit, VisitPaymentMovementType type) {
+        return visit.getPaymentMovements().stream()
+                .filter(movement -> movement.getType() == type)
+                .map(VisitPaymentMovement::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private DashboardResponse.AttendanceStats buildAttendanceStats(List<Shift> shifts) {

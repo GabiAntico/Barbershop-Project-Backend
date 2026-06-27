@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -25,4 +26,11 @@ public class VisitResponse {
     private PaymentStatus paymentStatus;
     private LocalDateTime paidAt;
     private PaymentMethod paymentMethod;
+    private BigDecimal grossPaidAmount;
+    private BigDecimal refundedAmount;
+    private BigDecimal bonifiedAmount;
+    private BigDecimal netPaidAmount;
+    private BigDecimal coveredAmount;
+    private BigDecimal pendingAmount;
+    private List<VisitPaymentMovementResponse> paymentMovements;
 }

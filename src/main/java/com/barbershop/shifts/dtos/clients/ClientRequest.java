@@ -17,6 +17,10 @@ public class ClientRequest {
     @NotBlank
     private String phoneNumber;
 
+    private Boolean selfResponsible;
+
+    private String responsibleContactName;
+
     private String firstName;
 
     private String lastName;

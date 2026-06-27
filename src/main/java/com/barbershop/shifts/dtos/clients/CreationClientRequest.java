@@ -13,6 +13,10 @@ public class CreationClientRequest {
     @NotBlank
     private String phoneNumber;
 
+    private Boolean selfResponsible;
+
+    private String responsibleContactName;
+
     private String firstName;
 
     private String lastName;

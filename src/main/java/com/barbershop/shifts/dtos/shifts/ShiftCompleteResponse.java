@@ -14,6 +14,7 @@ public class ShiftCompleteResponse {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm")
     private LocalDateTime datetime;
     private ClientResponse client;
+    private ShiftEmployeeResponse assignedEmployee;
     private ShiftStatus status;
     private BigDecimal estimatedAmount;
 }
