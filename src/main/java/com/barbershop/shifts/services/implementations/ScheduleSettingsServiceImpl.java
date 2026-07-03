@@ -100,8 +100,9 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
 
     @Override
     public ScheduleSettingsResponse getDefaultSchedule() {
+        Branch branch = currentUserService.getCurrentBranch();
         ScheduleSettingsResponse response = new ScheduleSettingsResponse();
-        response.setDate(LocalDate.now());
+        response.setDate(LocalDate.now(branch.resolveZoneId()));
         response.setSlots(parseSlots(getSettings().getDefaultScheduleSlots()).stream()
                 .map(slot -> new ScheduleSlotResponse(slot.format(TIME_FORMATTER), false, "ALL"))
                 .toList());
@@ -124,7 +125,7 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
         LocalDate responseDate = switch (mode) {
             case "DATE" -> request.getDate();
             case "RANGE" -> request.getStartDate();
-            default -> LocalDate.now();
+            default -> LocalDate.now(currentUserService.getCurrentBranch().resolveZoneId());
         };
 
         return getSchedule(responseDate);
@@ -271,7 +272,8 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
     }
 
     private void validateNotPast(LocalDate date) {
-        if (date.isBefore(LocalDate.now())) {
+        Branch branch = currentUserService.getCurrentBranch();
+        if (date.isBefore(LocalDate.now(branch.resolveZoneId()))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Past dates can't be configured");
         }
     }

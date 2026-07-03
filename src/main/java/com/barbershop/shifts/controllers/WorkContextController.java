@@ -26,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -83,6 +84,7 @@ public class WorkContextController {
         Branch branch = new Branch();
         branch.setName(normalizeRequired(request.getName(), "Branch name is required"));
         branch.setAddress(normalize(request.getAddress()));
+        branch.setTimeZone(normalizeTimeZone(request.getTimeZone()));
         branch.setBarbershop(user.getBarbershop());
         branch = branchRepository.save(branch);
         user.getBranches().add(branch);
@@ -245,6 +247,7 @@ public class WorkContextController {
         response.setId(branch.getId());
         response.setName(branch.getName());
         response.setAddress(branch.getAddress());
+        response.setTimeZone(branch.getTimeZone());
         return response;
     }
 
@@ -296,5 +299,18 @@ public class WorkContextController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
         }
         return normalized;
+    }
+
+    private String normalizeTimeZone(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return Branch.DEFAULT_TIME_ZONE;
+        }
+
+        try {
+            return ZoneId.of(normalized).getId();
+        } catch (RuntimeException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid branch time zone");
+        }
     }
 }

@@ -6,4 +6,5 @@ import lombok.Data;
 public class CreateBranchRequest {
     private String name;
     private String address;
+    private String timeZone;
 }

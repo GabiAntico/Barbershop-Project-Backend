@@ -118,7 +118,7 @@ public class ShiftServiceImpl implements ShiftService {
                 .filter(shift -> !Objects.equals(shift.getId(), excludeShiftId))
                 .toList();
         Shift excludedShift = excludeShiftId == null ? null : getShiftByIdRaw(excludeShiftId);
-        LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
+        LocalDateTime now = LocalDateTime.now(branch.resolveZoneId()).withSecond(0).withNano(0);
         List<User> employees = getEmployeesForBranch(branch);
         Map<Long, List<EmployeeSchedule>> schedulesByEmployee = getSchedulesByEmployee(employees, branch);
 
@@ -152,7 +152,7 @@ public class ShiftServiceImpl implements ShiftService {
         List<ShiftStatus> blocking = List.of(ShiftStatus.PENDING, ShiftStatus.COMPLETED);
         Branch branch = currentUserService.getCurrentBranch();
         List<Shift> blockingShifts = shiftRepository.findByDatetimeBetweenAndStatusInAndBranch(dayStart, dayEnd, blocking, branch);
-        LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
+        LocalDateTime now = LocalDateTime.now(branch.resolveZoneId()).withSecond(0).withNano(0);
         List<User> employees = getEmployeesForBranch(branch);
         Map<Long, List<EmployeeSchedule>> schedulesByEmployee = getSchedulesByEmployee(employees, branch);
 

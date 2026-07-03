@@ -108,11 +108,12 @@ public class VisitServiceImpl implements VisitService {
                 visitRequest.getPaymentStatus(),
                 totalAmount,
                 visitRequest.getPaidAt(),
-                visitRequest.getPaymentMethod()
+                visitRequest.getPaymentMethod(),
+                shift.getBranch()
         );
 
         validateTotalAmount(totalAmount);
-        validatePaymentMovements(totalAmount, movements);
+        validatePaymentMovements(totalAmount, movements, shift.getBranch());
 
         Visit visitNew = new Visit();
         visitNew.setShift(shift);
@@ -137,11 +138,12 @@ public class VisitServiceImpl implements VisitService {
                 visitRequest.getPaymentStatus(),
                 totalAmount,
                 visitRequest.getPaidAt(),
-                visitRequest.getPaymentMethod()
+                visitRequest.getPaymentMethod(),
+                visit.getShift().getBranch()
         );
 
         validateTotalAmount(totalAmount);
-        validatePaymentMovements(totalAmount, movements);
+        validatePaymentMovements(totalAmount, movements, visit.getShift().getBranch());
 
         visit.setTotalAmount(totalAmount);
         replacePaymentMovements(visit, movements);
@@ -216,7 +218,8 @@ public class VisitServiceImpl implements VisitService {
             PaymentStatus legacyPaymentStatus,
             BigDecimal totalAmount,
             LocalDateTime legacyPaidAt,
-            PaymentMethod legacyPaymentMethod
+            PaymentMethod legacyPaymentMethod,
+            Branch branch
     ) {
         if (paymentMovements != null && !paymentMovements.isEmpty()) {
             return paymentMovements;
@@ -259,7 +262,7 @@ public class VisitServiceImpl implements VisitService {
             return List.of(new VisitPaymentMovementRequest(
                     VisitPaymentMovementType.BONIFICATION,
                     totalAmount,
-                    LocalDateTime.now(),
+                    LocalDateTime.now(branch.resolveZoneId()),
                     null,
                     null
             ));
@@ -274,10 +277,11 @@ public class VisitServiceImpl implements VisitService {
         }
     }
 
-    private void validatePaymentMovements(BigDecimal totalAmount, List<VisitPaymentMovementRequest> movements) {
+    private void validatePaymentMovements(BigDecimal totalAmount, List<VisitPaymentMovementRequest> movements, Branch branch) {
         BigDecimal grossPaid = ZERO;
         BigDecimal refunded = ZERO;
         BigDecimal bonified = ZERO;
+        LocalDateTime now = LocalDateTime.now(branch.resolveZoneId());
 
         for (VisitPaymentMovementRequest movement : movements) {
             if (movement.getType() == null) {
@@ -292,7 +296,7 @@ public class VisitServiceImpl implements VisitService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Movement date is required");
             }
 
-            if (movement.getOccurredAt().isAfter(LocalDateTime.now())) {
+            if (movement.getOccurredAt().isAfter(now)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Movement date cannot be in the future");
             }
 
