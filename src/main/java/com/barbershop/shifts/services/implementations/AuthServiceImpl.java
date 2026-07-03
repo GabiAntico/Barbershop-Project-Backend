@@ -51,6 +51,7 @@ public class AuthServiceImpl implements AuthService {
         Branch branch = new Branch();
         branch.setName(normalizeRequired(request.branchName(), "Branch name is required"));
         branch.setAddress(normalize(request.branchAddress()));
+        branch.setTimeZone(Branch.DEFAULT_TIME_ZONE);
         branch.setBarbershop(barbershop);
         branch = branchRepository.save(branch);
 

@@ -63,7 +63,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         DashboardResponse response = new DashboardResponse();
         response.setRevenue(buildRevenueStats(visits));
-        response.setAttendance(buildAttendanceStats(shifts));
+        response.setAttendance(buildAttendanceStats(shifts, branch));
 
         return response;
     }
@@ -94,7 +94,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         ClientDashboardResponse response = new ClientDashboardResponse();
         response.setClient(buildClientStats(client));
-        response.setAttendance(buildAttendanceStats(shifts));
+        response.setAttendance(buildAttendanceStats(shifts, branch));
         response.setSelectedMonthRevenue(buildRevenueStats(selectedMonthVisits));
         response.setHistoricalRevenue(buildRevenueStats(historicalVisits));
         response.setVisitFrequency(buildVisitFrequencyStats(historicalVisits));
@@ -139,8 +139,8 @@ public class DashboardServiceImpl implements DashboardService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private DashboardResponse.AttendanceStats buildAttendanceStats(List<Shift> shifts) {
-        LocalDateTime now = LocalDateTime.now();
+    private DashboardResponse.AttendanceStats buildAttendanceStats(List<Shift> shifts, Branch branch) {
+        LocalDateTime now = LocalDateTime.now(branch.resolveZoneId());
 
         long completed = shifts.stream().filter(shift -> shift.getStatus() == ShiftStatus.COMPLETED).count();
         long cancelled = shifts.stream().filter(shift -> shift.getStatus() == ShiftStatus.CANCELLED).count();
