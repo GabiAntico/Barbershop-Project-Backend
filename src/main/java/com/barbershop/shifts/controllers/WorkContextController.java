@@ -63,8 +63,12 @@ public class WorkContextController {
         WorkContextResponse response = new WorkContextResponse();
         response.setBarbershopId(user.getBarbershop().getId());
         response.setBarbershopName(user.getBarbershop().getName());
+        response.setUserId(user.getId());
+        response.setDisplayName(user.getDisplayName());
+        response.setEmail(user.getEmail());
         response.setUserRole(user.getRole());
         response.setTemporaryPassword(Boolean.TRUE.equals(user.getTemporaryPassword()));
+        response.setProfileImageUrl(user.getProfileImageUrl());
         response.setBranches(getAvailableBranches(user).stream().map(this::toBranchResponse).toList());
         return response;
     }

@@ -27,6 +27,9 @@ public class User {
     @Column(name = "temporary_password")
     private Boolean temporaryPassword = false;
 
+    @Column(name = "profile_image_url", length = 900000)
+    private String profileImageUrl;
+
     @ManyToOne
     @JoinColumn(name = "barbershop_id")
     private Barbershop barbershop;

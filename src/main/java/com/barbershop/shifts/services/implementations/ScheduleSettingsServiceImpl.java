@@ -3,14 +3,18 @@ package com.barbershop.shifts.services.implementations;
 import com.barbershop.shifts.dtos.settings.ScheduleSettingsRequest;
 import com.barbershop.shifts.dtos.settings.ScheduleSettingsResponse;
 import com.barbershop.shifts.dtos.settings.ScheduleSlotResponse;
+import com.barbershop.shifts.dtos.settings.ScheduleWeeklyDayRequest;
+import com.barbershop.shifts.dtos.settings.ScheduleWeeklyDayResponse;
 import com.barbershop.shifts.entities.AppSettings;
 import com.barbershop.shifts.entities.Branch;
 import com.barbershop.shifts.entities.ScheduleOverride;
+import com.barbershop.shifts.entities.ScheduleWeeklyDefault;
 import com.barbershop.shifts.entities.Shift;
 import com.barbershop.shifts.entities.ShiftStatus;
 import com.barbershop.shifts.entities.User;
 import com.barbershop.shifts.repositories.AppSettingsRepositoryJpa;
 import com.barbershop.shifts.repositories.ScheduleOverrideRepositoryJpa;
+import com.barbershop.shifts.repositories.ScheduleWeeklyDefaultRepositoryJpa;
 import com.barbershop.shifts.repositories.ShiftRepositoryJpa;
 import com.barbershop.shifts.services.CurrentUserService;
 import com.barbershop.shifts.services.ScheduleSettingsService;
@@ -18,14 +22,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,17 +45,20 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
 
     private final AppSettingsRepositoryJpa appSettingsRepository;
     private final ScheduleOverrideRepositoryJpa scheduleOverrideRepository;
+    private final ScheduleWeeklyDefaultRepositoryJpa scheduleWeeklyDefaultRepository;
     private final ShiftRepositoryJpa shiftRepository;
     private final CurrentUserService currentUserService;
 
     public ScheduleSettingsServiceImpl(
             AppSettingsRepositoryJpa appSettingsRepository,
             ScheduleOverrideRepositoryJpa scheduleOverrideRepository,
+            ScheduleWeeklyDefaultRepositoryJpa scheduleWeeklyDefaultRepository,
             ShiftRepositoryJpa shiftRepository,
             CurrentUserService currentUserService
     ) {
         this.appSettingsRepository = appSettingsRepository;
         this.scheduleOverrideRepository = scheduleOverrideRepository;
+        this.scheduleWeeklyDefaultRepository = scheduleWeeklyDefaultRepository;
         this.shiftRepository = shiftRepository;
         this.currentUserService = currentUserService;
     }
@@ -103,22 +113,22 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
         Branch branch = currentUserService.getCurrentBranch();
         ScheduleSettingsResponse response = new ScheduleSettingsResponse();
         response.setDate(LocalDate.now(branch.resolveZoneId()));
-        response.setSlots(parseSlots(getSettings().getDefaultScheduleSlots()).stream()
+        response.setSlots(getWeeklySlotsForDay(LocalDate.now(branch.resolveZoneId()).getDayOfWeek()).stream()
                 .map(slot -> new ScheduleSlotResponse(slot.format(TIME_FORMATTER), false, "ALL"))
                 .toList());
+        response.setWeeklySlots(buildWeeklyResponse());
 
         return response;
     }
 
     @Override
     public ScheduleSettingsResponse updateSchedule(ScheduleSettingsRequest request) {
-        List<LocalTime> slots = normalizeSlots(request.getSlots());
         String mode = request.getMode().trim().toUpperCase();
 
         switch (mode) {
-            case "DATE" -> updateSingleDate(request.getDate(), slots);
-            case "RANGE" -> updateRange(request.getStartDate(), request.getEndDate(), slots);
-            case "DEFAULT" -> updateDefault(slots);
+            case "DATE" -> updateSingleDate(request.getDate(), normalizeSlots(request.getSlots()));
+            case "RANGE" -> updateRange(request.getStartDate(), request.getEndDate(), normalizeSlots(request.getSlots()));
+            case "DEFAULT" -> updateDefault(request);
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid schedule mode");
         }
 
@@ -128,7 +138,7 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
             default -> LocalDate.now(currentUserService.getCurrentBranch().resolveZoneId());
         };
 
-        return getSchedule(responseDate);
+        return "DEFAULT".equals(mode) ? getDefaultSchedule() : getSchedule(responseDate);
     }
 
     @Override
@@ -136,8 +146,8 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
         Branch branch = currentUserService.getCurrentBranch();
 
         return scheduleOverrideRepository.findByBranchAndDate(branch, date)
-                .map(override -> parseSlots(override.getSlots()))
-                .orElseGet(() -> parseSlots(getSettings().getDefaultScheduleSlots()));
+                .map(override -> parseStoredSlots(override.getSlots()))
+                .orElseGet(() -> getWeeklySlotsForDay(date.getDayOfWeek()));
     }
 
     @Override
@@ -164,11 +174,10 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
         }
     }
 
-    private void updateDefault(List<LocalTime> slots) {
-        AppSettings settings = getSettings();
-        String previousDefault = settings.getDefaultScheduleSlots();
+    private void updateDefault(ScheduleSettingsRequest request) {
         User owner = currentUserService.getCurrentUser();
         Branch branch = currentUserService.getCurrentBranch();
+        Map<DayOfWeek, List<LocalTime>> weeklySlots = normalizeWeeklySlots(request);
 
         Set<LocalDate> datesWithShifts = shiftRepository.findAllByBranch(branch).stream()
                 .filter(shift -> BLOCKING_STATUSES.contains(shift.getStatus()))
@@ -177,12 +186,13 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
 
         for (LocalDate date : datesWithShifts) {
             if (scheduleOverrideRepository.findByBranchAndDate(branch, date).isEmpty()) {
-                saveOverride(date, parseSlots(previousDefault));
+                saveOverride(date, getSlotsForDate(date));
             }
         }
 
-        settings.setDefaultScheduleSlots(formatSlots(slots));
-        appSettingsRepository.save(settings);
+        for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+            saveWeeklyDefault(dayOfWeek, weeklySlots.getOrDefault(dayOfWeek, List.of()), owner, branch);
+        }
     }
 
     private void saveOverride(LocalDate date, List<LocalTime> slots) {
@@ -279,15 +289,15 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
     }
 
     private List<LocalTime> normalizeSlots(List<String> rawSlots) {
+        if (rawSlots == null || rawSlots.isEmpty()) {
+            return List.of();
+        }
+
         List<LocalTime> slots = rawSlots.stream()
                 .map(this::parseSlot)
                 .distinct()
                 .sorted(Comparator.naturalOrder())
                 .toList();
-
-        if (slots.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "At least one slot is required");
-        }
 
         for (int i = 1; i < slots.size(); i++) {
             long minutes = java.time.Duration.between(slots.get(i - 1), slots.get(i)).toMinutes();
@@ -297,6 +307,33 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
         }
 
         return slots;
+    }
+
+    private Map<DayOfWeek, List<LocalTime>> normalizeWeeklySlots(ScheduleSettingsRequest request) {
+        Map<DayOfWeek, List<LocalTime>> weeklySlots = new EnumMap<>(DayOfWeek.class);
+
+        if (request.getWeeklySlots() == null || request.getWeeklySlots().isEmpty()) {
+            List<LocalTime> sharedSlots = normalizeSlots(request.getSlots());
+            for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+                weeklySlots.put(dayOfWeek, sharedSlots);
+            }
+
+            return weeklySlots;
+        }
+
+        for (ScheduleWeeklyDayRequest dayRequest : request.getWeeklySlots()) {
+            if (dayRequest.getDayOfWeek() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Day of week is required");
+            }
+
+            weeklySlots.put(dayRequest.getDayOfWeek(), normalizeSlots(dayRequest.getSlots()));
+        }
+
+        for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+            weeklySlots.putIfAbsent(dayOfWeek, List.of());
+        }
+
+        return weeklySlots;
     }
 
     private LocalTime parseSlot(String slot) {
@@ -320,11 +357,51 @@ public class ScheduleSettingsServiceImpl implements ScheduleSettingsService {
         return parsed.stream().distinct().sorted(Comparator.naturalOrder()).toList();
     }
 
+    private List<LocalTime> parseStoredSlots(String slots) {
+        if (slots == null || slots.trim().isEmpty()) {
+            return List.of();
+        }
+
+        return parseSlots(slots);
+    }
+
     private String formatSlots(List<LocalTime> slots) {
         return slots.stream()
                 .sorted(Comparator.naturalOrder())
                 .map(slot -> slot.format(TIME_FORMATTER))
                 .collect(Collectors.joining(","));
+    }
+
+    private List<LocalTime> getWeeklySlotsForDay(DayOfWeek dayOfWeek) {
+        Branch branch = currentUserService.getCurrentBranch();
+
+        return scheduleWeeklyDefaultRepository.findByBranchAndDayOfWeek(branch, dayOfWeek)
+                .map(defaultDay -> parseStoredSlots(defaultDay.getSlots()))
+                .orElseGet(() -> parseSlots(getSettings().getDefaultScheduleSlots()));
+    }
+
+    private List<ScheduleWeeklyDayResponse> buildWeeklyResponse() {
+        return java.util.Arrays.stream(DayOfWeek.values())
+                .map(dayOfWeek -> {
+                    ScheduleWeeklyDayResponse response = new ScheduleWeeklyDayResponse();
+                    response.setDayOfWeek(dayOfWeek);
+                    response.setSlots(getWeeklySlotsForDay(dayOfWeek).stream()
+                            .map(slot -> new ScheduleSlotResponse(slot.format(TIME_FORMATTER), false, "ALL"))
+                            .toList());
+                    return response;
+                })
+                .toList();
+    }
+
+    private void saveWeeklyDefault(DayOfWeek dayOfWeek, List<LocalTime> slots, User owner, Branch branch) {
+        ScheduleWeeklyDefault weeklyDefault = scheduleWeeklyDefaultRepository
+                .findByBranchAndDayOfWeek(branch, dayOfWeek)
+                .orElseGet(ScheduleWeeklyDefault::new);
+        weeklyDefault.setDayOfWeek(dayOfWeek);
+        weeklyDefault.setSlots(formatSlots(slots));
+        weeklyDefault.setOwner(owner);
+        weeklyDefault.setBranch(branch);
+        scheduleWeeklyDefaultRepository.save(weeklyDefault);
     }
 
     private AppSettings getSettings() {

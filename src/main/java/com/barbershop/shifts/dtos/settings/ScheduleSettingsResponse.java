@@ -9,4 +9,5 @@ import java.util.List;
 public class ScheduleSettingsResponse {
     private LocalDate date;
     private List<ScheduleSlotResponse> slots;
+    private List<ScheduleWeeklyDayResponse> weeklySlots;
 }

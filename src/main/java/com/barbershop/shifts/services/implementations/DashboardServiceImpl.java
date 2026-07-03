@@ -69,6 +69,19 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
+    public DashboardResponse getHistoricalDashboard() {
+        Branch branch = currentUserService.getCurrentBranch();
+        List<Shift> shifts = shiftRepository.findAllByBranch(branch);
+        List<Visit> visits = visitRepository.findAllByShiftBranch(branch);
+
+        DashboardResponse response = new DashboardResponse();
+        response.setRevenue(buildRevenueStats(visits));
+        response.setAttendance(buildAttendanceStats(shifts, branch));
+
+        return response;
+    }
+
+    @Override
     public ClientDashboardResponse getClientDashboard(Long clientId, YearMonth month) {
         if (clientId == null || clientId <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Client id is required");

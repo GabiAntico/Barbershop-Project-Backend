@@ -1,6 +1,5 @@
 package com.barbershop.shifts.dtos.settings;
 
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -16,6 +15,6 @@ public class ScheduleSettingsRequest {
     private LocalDate startDate;
     private LocalDate endDate;
 
-    @NotEmpty
     private List<String> slots;
+    private List<ScheduleWeeklyDayRequest> weeklySlots;
 }

@@ -8,5 +8,6 @@ import java.time.YearMonth;
 
 public interface DashboardService {
     DashboardResponse getDashboard(LocalDate startDate, LocalDate endDate);
+    DashboardResponse getHistoricalDashboard();
     ClientDashboardResponse getClientDashboard(Long clientId, YearMonth month);
 }

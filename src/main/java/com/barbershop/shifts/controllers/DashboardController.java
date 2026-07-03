@@ -32,6 +32,11 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getDashboard(startDate, endDate));
     }
 
+    @GetMapping("/historical")
+    public ResponseEntity<DashboardResponse> getHistoricalDashboard() {
+        return ResponseEntity.ok(dashboardService.getHistoricalDashboard());
+    }
+
     @GetMapping("/clients/{clientId}")
     public ResponseEntity<ClientDashboardResponse> getClientDashboard(
             @PathVariable Long clientId,
